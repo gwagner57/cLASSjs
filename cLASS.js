@@ -17,6 +17,11 @@
  *   // or, alternatively,
  *   if (myObj instanceof MyObject) ...
  *
+ * ToDo: 
+ *  - invoke checks in constructor
+ *  - add a generic set method (as in mODELcLASS)
+ *  - 
+ *
  * @copyright Copyright 2015-2016 Gerd Wagner, Chair of Internet Technology,
  *   Brandenburg University of Technology, Germany.
  * @license The MIT License (MIT)
@@ -97,7 +102,7 @@ function cLASS (classSlots) {
         this[f] = instanceSlots[f];
       }, this);
     }
-    // if the class is not abstract and the object has an ID slot?
+    // is the class not abstract and does the object have an ID slot?
     if (!classSlots.isAbstract && "id" in this) {
       // add new object to the population/extension of the class
       cLASS[classSlots.Name].instances[String(this.id)] = this;
