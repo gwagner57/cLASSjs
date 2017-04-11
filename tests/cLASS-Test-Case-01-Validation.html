@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+ <head>
+  <title>cLASS-Test-Case-01-Validation</title>
+  <meta charset="UTF-8" />
+  <script src="../browserShims.js"></script>
+<!--
+  <script src="../lib/util.js"></script>
+-->
+  <script src="../errorTypes.js"></script>
+  <script src="../eNUMERATION.js"></script>
+  <script src="../cLASS.js"></script>
+ </head>
+ <body>
+  <h1>cLASS-Test-Case-01-Validation</h1>
+  
+  <script>//<![CDATA[
+var i=0, j=0, failure=false;
+    
+try {
+var GenderEL = new eNUMERATION("GenderEL",  ["male","female","undetermined"]);
+var Person = new cLASS({
+  Name: "Person",
+  properties: {
+    personId: {range:"NonNegativeInteger", isStandardId: true, label:"Person identifier"},
+    name: {range:"NonEmptyString", min: 2, max: 20, label:"Name"},
+    gender: {range: GenderEL, label:"Gender"},
+    dateOfbirth: {range:"Date", label:"Date of birth"},
+    age: {range:"NonNegativeInteger", max: 130, optional: true, label:"Age"}
+  },
+  methods: {
+    sayHello: function () {
+      return "My name is " + this.name + ". ";
+    }
+  }
+});
+} catch (e) {
+  console.log( e.constructor.name +": "+ e.message);
+}
+ 
+// create test data
+document.write( "Test <strong>new Person</strong> with flawed data: ");
+try {
+  var gw = new Person({
+         personId: 11, name:"Gerd Wagner", 
+         gender: 4, birthDate:"1957-05-15"});
+  document.write( "FAILED! <br />");
+  failure = true;
+} catch (e) {
+  document.write( "OKAY <br />");
+  console.log(e.constructor.name +": "+ e.message);
+}
+document.write( "Test <strong>new Person</strong> with correct data: ");
+try {
+  var gw = new Person( {
+         personId: 11, name:"Gerd Wagner", 
+         gender: GenderEL.MALE, birthDate:"1957-05-15"});
+  document.write( "OKAY <br />");
+  failure = false;
+} catch (e) {
+  document.write( "FAILED! <br />");
+  console.log(e.constructor.name +": "+ e.message);
+  failure = true;
+}
+if (!failure) {
+//test validation checks with setter
+  document.write("Test the <strong>setter</strong> with flawed date value: ");
+  try {
+    gw.set("dateOfbirth", "15.5.1957");
+    document.write( "FAILED! <br />");
+  } catch (e) {
+    console.log( e.constructor.name +": "+ e.message);
+    document.write( "OKAY <br />");
+  }
+}
+
+  //]]></script> 
+ </body>
+</html>
