@@ -68,11 +68,14 @@ function cLASS (classSlots) {
             // convert IdRef to object reference
             this[p] = cLASS[range].instances[String(val)] || val;
           }
-        } else this[p] = val;
+        } else {
+          this[p] = val;
+        }
         delete instanceSlots[p];
       } else if (propDs[p].initialValue !== undefined) {
         // assign initial value to properties without an initialization slot
         if (typeof propDs[p].initialValue === "function")
+          // evaluate expressions only later, in a second pass
           propsWithInitialValFunc.push( p);
         else this[p] = propDs[p].initialValue;
       } else if (!propDs[p].optional) {
