@@ -13,12 +13,16 @@
  </head>
  <body>
   <h1>cLASS-Test-Case-01-Validation</h1>
+  <dl>
+   <dt>Person</dt>
+  </dl>
   
   <script>//<![CDATA[
 var i=0, j=0, failure=false;
-    
+
+const GenderEL = new eNUMERATION("GenderEL",  ["male","female","undetermined"]);
+
 try {
-var GenderEL = new eNUMERATION("GenderEL",  ["male","female","undetermined"]);
 var Person = new cLASS({
   Name: "Person",
   properties: {
@@ -42,8 +46,9 @@ var Person = new cLASS({
 document.write( "Test <strong>new Person</strong> with flawed data: ");
 try {
   var gw = new Person({
-         personId: 11, name:"Gerd Wagner", 
-         gender: 4, birthDate:"1957-05-15"});
+    personId: 11, name:"Gerd Wagner",
+    gender: 4, // FLAWED!!!
+    birthDate:"1957-05-15"});
   document.write( "FAILED! <br />");
   failure = true;
 } catch (e) {
