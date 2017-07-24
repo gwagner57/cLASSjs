@@ -14,15 +14,8 @@ A JS library for defining enumerations, constructor-based classes, and class hie
         Name: "Weather",
         supertypeName: "oBJECT",
         properties: {
-          "weatherState": {
-              range: WeatherStateEL,
-              label: "Weather conditions",
-              shortLabel: "cond"
-          },
-          "temperature": {
-              range: "Decimal",
-              label: "Temperature"
-          }
+          "weatherState": { range: WeatherStateEL, label: "Weather conditions"},
+          "temperature": { range: "Decimal", label: "Temperature"}
         },
         methods: {...}
     });
