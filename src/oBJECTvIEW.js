@@ -76,8 +76,20 @@
  * @this {oBJECTvIEW}
  * @param {{modelObject: Object, fields: Array, methods: Map?}}
  *        slots  The view definition slots.
+ *
+ * Example invocation:
+ 
+  var dataBinding = new oBJECTvIEW({
+      modelObject: sim.scenario,
+	  // create a horizontal field group
+      fields: [["simulationEndTime", "stepDuration", "visualize", "createLog"]],
+      userActions: {
+        "run": function () {...}
+	  }
+  })	  
+ 
  */
-
+/* globals oBJECTvIEW */
 var oBJECTvIEW = function (slots) {
   var properties={}; 
   
@@ -138,12 +150,12 @@ var oBJECTvIEW = function (slots) {
     }, this);
   } else {  // no view fields provided in construction slots
     // create view fields from labeled model properties
-    Object.keys( properties).forEach( function (prop,i) {
+    Object.keys( properties).forEach( function (prop) {
       if (properties[prop].label &&
           (!this.suppressNoValueFields ||
            this.modelObject[prop] !== undefined ||
            properties[prop].dependsOn  !== undefined)) {
-        this.fieldOrder[this.fieldOrder.length] = Object.keys( properties)[i];
+        this.fieldOrder.push( prop);
         this.fields[prop] = properties[prop];
         this.fields[prop]["inputOutputMode"] = "I/O";
       }
@@ -153,7 +165,6 @@ var oBJECTvIEW = function (slots) {
       slots.maxNmrOfEnumLitForChoiceButtonRendering || 7;
   this.methods = slots.methods || {};
   this.userActions = slots.userActions || {};
-  //this.dataBinding = {"C":{},"R":{},"U":{},"D":{}};
   //this.fieldGroupSeparator = slots.fieldGroupSeparator || ", ";
   /**
    * Generic setter for view fields
@@ -181,10 +192,10 @@ var oBJECTvIEW = function (slots) {
     // bottom-up data-binding: assign UI/form field
     if (uiEl.tagName === "INPUT" || uiEl.tagName === "OUTPUT") {
       if (!Array.isArray(v)) {
-        uiEl.value = eNTITYtYPE.convertPropValToString( mc, f, v);
+        uiEl.value = cLASS.convertPropValToString( mc, f, v);
       } else {
         v.forEach( function (el,i) {
-          var ds = eNTITYtYPE.convertPropValToString( mc, f, el);
+          var ds = cLASS.convertPropValToString( mc, f, el);
           if (i===0) uiEl.value = ds;
           else uiEl.value += fldGrpSep + ds;
         });
@@ -209,11 +220,11 @@ var oBJECTvIEW = function (slots) {
     } else {
       uiEl.setAttribute("data-value", v);
     }
-  }
+  };
 };
 /**
- * Render the DOM structure of a view
- * this = view object
+ * Render the HTML form DOM of a model object's view model
+ * this = view model object
  * @author Gerd Wagner
  * @method
  * @return {object} dataBinding
@@ -467,14 +478,14 @@ oBJECTvIEW.prototype.render = function (parentEl) {
   /* ==================================================================== */
   /* MAIN CODE of render                                                  */
   /* ==================================================================== */
-  uiContainerEl = document.querySelector("form#" + mo.objectName);
-  if (!uiContainerEl) {
-    uiContainerEl = dom.createElement(
-        !parentEl ? "form":"div", {id: mo.objectName});
-    if (this.heading) {
-      uiContainerEl.appendChild( dom.createElement("h2", {content:this.heading}));
-    }
+
+  uiContainerEl = dom.createElement(
+      !parentEl ? "form":"div", {id: mo.objectName});
+  if (this.heading) {
+    uiContainerEl.appendChild( dom.createElement("h2", {content:this.heading}));
   }
+  // store the object view's DOM element
+  this.domElem = uiContainerEl;
   if (!parentEl) parentEl = document.querySelector("#uiContainerEl");
   if (!parentEl) {
     parentEl = document.body;
@@ -491,11 +502,11 @@ oBJECTvIEW.prototype.render = function (parentEl) {
     }
     uiContainerEl.reset();
   }
-  // create UI elements for all UI/view model fields
+  // create DOM elements for all UI/view fields
   createUiElemsForViewFields();
-  // create UI elements (like buttons) for all user actions of the UI/view model
+  // create DOM elements (like buttons) for all user actions of the UI/view model
   createUiElemsForUserActions( uiContainerEl);
-  return dataBinding;
+  return dataBinding;  // a map of field names to corresponding DOM elements 
 };
 /**
  * Set up a tabular UI for defining the objects/population of a given cLASS
@@ -544,8 +555,7 @@ oBJECTvIEW.createClassPopulationWidget = function (Class, editableProperties) {
     // create object row
     rowObjects[i] = obj;
     // create property value cells for own properties TODO: support inherited properties
-    rowEl.insertCell().textContent = obj["name"] ?
-        obj["id"] +" / "+ obj["name"] : obj["id"];
+    rowEl.insertCell().textContent = obj.name ? obj.id +" / "+ obj.name : obj.id;
     Object.keys( Class.properties).forEach( function (p) {
       var c=null;
       if (columnProperties.includes( p)) {
@@ -573,7 +583,7 @@ oBJECTvIEW.createClassPopulationWidget = function (Class, editableProperties) {
           }
         });
       };
-    })
+    });
   });
   // create an AddRow button
   //oBJECTvIEW.createUiElemsForUserActions( popTableEl, this.userActions);
@@ -596,4 +606,297 @@ oBJECTvIEW.createUiElemsForUserActions = function (userActions) {
     }));
   });
   return containerEl;
-}
+};
+/**
+ * Render an HTML form based on an abstract UI definition
+ * @author Gerd Wagner
+ * @method
+ * @return {object} dataBinding
+ */
+oBJECTvIEW.renderUiDef = function (uiDef) {
+  var outFields = uiDef.outFields,  // map of field definitions
+      inFields = uiDef.inFields,  // map of field definitions
+      fields = {},
+      // list of field names or field name lists
+      fieldOrder = uiDef.fieldOrder ||
+          Object.keys( outFields).concat( Object.keys( inFields)),
+      fieldValues = uiDef.fieldValues,
+      userActions = uiDef.userActions,
+      // a map for storing the bindings of DOM form elems to UI fields
+      dataBinding = {},
+      validateOnInput = uiDef.validateOnInput || true,
+      fldGrpSep = uiDef.fieldGroupSeparator,
+      maxELforButton = 7,
+      uiContainerEl=null, footerEl=null, i=0;
+  /* ==================================================================== */
+  /**
+   * Create a labeled text field. When validation is not performed on input
+   * it is performed on blur in the case of "Create" for catching mandatory
+   * value constraint violations, and on change in the case of "Update".
+   * @method
+   */
+  function createLabeledTextField( fld) {
+    var fldEl = null, lblEl = document.createElement("label"),
+        decl = fields[fld];   // field declaration
+    if (decl.inputOutputMode === "O") {
+      fldEl = document.createElement("output");
+    } else {
+      fldEl = document.createElement("input");
+      fldEl.type = "text";
+      if (validateOnInput) {
+        fldEl.addEventListener("input", function () {
+          fldEl.setCustomValidity( cLASS.check( fld, decl, fldEl.value).message);
+        });
+      } else {
+        fldEl.addEventListener("blur", function () {
+          fldEl.setCustomValidity( cLASS.check( fld, decl, fldEl.value).message);
+        });
+      }
+      fldEl.addEventListener("change", function () {
+        var v = fldEl.value;
+        if (!validateOnInput) {
+          fldEl.setCustomValidity( cLASS.check( fld, decl, v).message);
+        }
+        // UI element to model property data binding (top-down)
+        if (fldEl.validity.valid) fieldValues[fld] = v;
+      });
+    }
+    // store data binding assignment of UI element to view field
+    dataBinding[fld] = fldEl;
+    // render text input element
+    fldEl.name = fld;
+    if (fieldValues && fieldValues[fld]) {
+      fldEl.value = fieldValues[fld];
+    } else fldEl.value = "";
+    fldEl.size = 7;
+    if (fields[fld].hint) lblEl.title = fields[fld].hint;
+    lblEl.textContent = fields[fld].label;
+    lblEl.appendChild( fldEl);
+    return lblEl;
+  }
+  /**
+   * Create a labeled Yes/No field.
+   * @method
+   */
+  function createLabeledYesNoField( fld) {
+    var fldEl = null, lblEl = document.createElement("label"),
+        decl = fields[fld];   // field declaration
+    if (decl.inputOutputMode === "O") {
+      fldEl = document.createElement("output");
+    } else {
+      fldEl = document.createElement("input");
+      fldEl.type = "checkbox";
+      fldEl.addEventListener("change", function () {
+        fieldValues[fld] = fldEl.checked;  // UI element to model property data binding
+      });
+    }
+    // store data binding assignment of UI element to view field
+    dataBinding[fld] = fldEl;
+    fldEl.name = fld;
+    fldEl.checked = fieldValues[fld];
+    lblEl.textContent = fields[fld].label;
+    if (fields[fld].hint) lblEl.title = fields[fld].hint;
+    lblEl.appendChild( fldEl);
+    return lblEl;
+  }
+  /**
+   * Create a choice control group in a container element.
+   * A choice control is either an HTML radio button or an HTML checkbox.
+   * @method
+   */
+  function createChoiceButtonGroup( fld) {
+    var j=0, btnType="", containerEl=null, el=null, choiceItems=[],
+        range = fields[fld].range;
+    el = document.createElement("legend");
+    el.textContent = fields[fld].label;
+    containerEl = document.createElement("fieldset");
+    containerEl.appendChild( el);
+    containerEl.setAttribute("data-bind", fld);
+    // store data binding of UI element
+    dataBinding[fld] = containerEl;
+    // if maxCard is defined, use checkboxes
+    if (fields[fld].maxCard) {
+      btnType = "checkbox";
+      containerEl.className = "checkbox-group";
+    } else {
+      btnType = "radio";
+      containerEl.className = "radio-button-group";
+    }
+    if (range instanceof eNUMERATION) {
+      choiceItems = range.labels;
+    } else if (Array.isArray(range)) {  // range is an ad-hoc enumeration
+      choiceItems = range;
+    } else {  // range is an entity type
+      choiceItems = Object.keys( range.instances);
+    }
+    for (j=0; j < choiceItems.length; j++) {
+      // button values = 1..n
+      el = dom.createLabeledChoiceControl( btnType, fld, j+1, choiceItems[j]);
+      containerEl.appendChild( el);
+      el.firstElementChild.addEventListener("click", function (e) {
+        // UI element to model property data binding (top-down)
+        var btnEl = e.target, i=0,
+            val = parseInt( btnEl.value);
+        if (btnType === "radio") {
+          if (val !== fieldValues[fld]) {
+            fieldValues[fld] = val;
+          } else if (fields[fld].optional) {
+            // turn off radio button
+            btnEl.checked = false;
+            fieldValues[fld] = undefined;
+          }
+        } else {  // checkbox
+          i = fieldValues[fld].indexOf( val);
+          if (i > -1) {  // delete from value list
+            fieldValues[fld].splice(i, 1);
+          } else {  // add to value list
+            fieldValues[fld].push( val);
+          }
+        }
+      });
+    }
+    return containerEl;
+  }
+  /**
+   * Create a selection list
+   * @method
+   */
+  function createSelectionList( fld) {
+    var choiceItems = [],
+        selEl = document.createElement("select"),
+        lblEl = document.createElement("label"),
+        range  = fields[fld].range;
+    lblEl.textContent = fields[fld].label;
+    lblEl.appendChild( selEl);
+    selEl.setAttribute("data-bind", fld);
+    // store data binding assignment of UI element to view field
+    dataBinding[fld] = selEl;
+    // if maxCard is defined, make a multi-selection list
+    if (fields[fld].maxCard) selEl.multiple = "multiple";
+    if (range instanceof eNUMERATION) {
+      choiceItems = range.labels;
+    } else if (Array.isArray(range)) {  // range is an ad-hoc enumeration
+      choiceItems = range;
+    } else {  // range is an entity type
+      choiceItems = Object.keys( range.instances);
+    }
+    dom.fillSelectWithOptions( selEl, choiceItems);
+    selEl.addEventListener("change", function () {
+      // UI element to model property data binding (top-down)
+      if (selEl.value !== "") {
+        if (oBJECTvIEW.isIntegerType( range)) {
+          fieldValues[fld] = parseInt( selEl.value);
+          // increment by 1 for enumerations
+          if (range instanceof eNUMERATION) fieldValues[fld]++;
+        } else if (fields[fld].range === "Date") {
+          fieldValues[fld] = new Date( selEl.value);
+        } else {
+          fieldValues[fld] = selEl.value;
+        }
+      }
+    });
+    return lblEl;
+  }
+  /**
+   * Create UI elements for view fields
+   * depends on: fieldOrder
+   * @method
+   */
+  function createUiElemsForViewFields() {
+    //============= Inner Function ==============================
+    function createUiElemForViewField (containerEl, fld) {
+      var range = fields[fld].range,
+          isEnum = range instanceof eNUMERATION,
+          isArr = Array.isArray( range);
+      if (isEnum || isArr) {  // (ad-hoc) enumeration
+        if (isEnum && range.MAX <= maxELforButton ||
+            isArr && range.length <= maxELforButton) {
+          containerEl = createChoiceButtonGroup( fld);
+          if (!containerEl.className) containerEl.className = "choice";
+        } else {
+          if (!containerEl.className) containerEl.className = "select";
+          containerEl.appendChild( createSelectionList( fld));
+        }
+      } else if (range === "Boolean") {
+        if (!containerEl.className) containerEl.className = "yes-no-field";
+        containerEl.appendChild( createLabeledYesNoField( fld));
+      } else {  // string/numeric property field
+        if (!containerEl.className) containerEl.className = "I-O-field";
+        containerEl.appendChild( createLabeledTextField( fld));
+      }
+      if (fields[fld].dependsOn) {
+        if (fieldValues[fields[fld].dependsOn]) containerEl.style.display = "block";
+        else containerEl.style.display = "none";
+        dataBinding[fields[fld].dependsOn].addEventListener("change", function () {
+          // toggle CSS style.display of containerEl
+          containerEl.style.display = (containerEl.style.display === "none") ? "block" : "none";
+        });
+      }
+    }
+    //=========================================================
+    fieldOrder.forEach( function (fldOrdEl) {
+      var containerEl = document.createElement("div");
+      if (!Array.isArray( fldOrdEl)) {  // single field
+        createUiElemForViewField( containerEl, fldOrdEl);
+      } else {  // field group
+        containerEl.className = "field-group";
+        fldOrdEl.forEach( function (fld) {
+          createUiElemForViewField( containerEl, fld);
+        });
+      }
+      uiContainerEl.appendChild( containerEl);
+    });
+  }
+  /**
+   * Create UI elements (like buttons) for all user actions of the view
+   * depends on: fieldOrder
+   * @method
+   */
+  function createUiElemsForUserActions( parentEl) {
+    var containerEl = dom.createElement("div", {
+      classValues:"action-group"
+    });
+    Object.keys( userActions).forEach( function (usrAct) {
+      containerEl.appendChild( dom.createButton({
+        name: usrAct,
+        label: userActions[usrAct].label || util.capitalizeFirstChar( usrAct),
+        handler: userActions[usrAct]
+      }));
+      parentEl.appendChild( containerEl);
+    });
+  }
+  /* ==================================================================== */
+  /* MAIN CODE                                                 */
+  /* ==================================================================== */
+  if (!fieldValues) fieldValues = uiDef.fieldValues = {};
+  Object.keys( outFields).forEach( function (fld) {
+    outFields[fld].inputOutputMode = "O";
+  });
+  fields = util.mergeObjects( outFields, inFields);
+  uiContainerEl = dom.createElement("form");
+  if (uiDef.formID) uiContainerEl.id = uiDef.formID;
+  if (uiDef.heading) {
+    uiContainerEl.appendChild( dom.createElement("h2", {content:uiDef.heading}));
+  }
+  // store the object view's DOM element
+  uiDef.domElem = uiContainerEl;
+  footerEl = document.querySelector("html>body>footer");
+  if (footerEl) {
+    document.body.insertBefore( uiContainerEl, footerEl);
+  } else {
+    document.body.appendChild( uiContainerEl);
+  }
+  /*
+  if (uiContainerEl.tagName === "FORM") {  // reset custom validity
+    for (i=0; i < uiContainerEl.elements.length; i++) {
+      uiContainerEl.elements[i].setCustomValidity("");
+    }
+    uiContainerEl.reset();
+  }
+  */
+  // create DOM elements for all UI/view fields
+  createUiElemsForViewFields();
+  // create DOM elements (like buttons) for all user actions of the UI/view model
+  createUiElemsForUserActions( uiContainerEl);
+  return dataBinding;  // a map of field names to corresponding DOM elements
+};

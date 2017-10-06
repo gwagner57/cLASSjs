@@ -9,6 +9,7 @@
  * @param {string} name  The name of the new enumeration data type.
  * @param {array} enumArg  The labels array or code list map of the enumeration
  */
+/* globals eNUMERATION */
 function eNUMERATION( name, enumArg) {
   var i = 0, lbl = "", LBL = "";
   if (typeof name !== "string") {

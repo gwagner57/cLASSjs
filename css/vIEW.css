@@ -1,0 +1,91 @@
+/* ==========================================================================
+   Custom styles
+   ========================================================================== */
+
+body {
+  padding: 8px;
+}
+
+table { 
+  margin: 1em 0;
+}  
+table, td, th { 
+  border: thin solid black;
+  padding: 5px;
+}  
+thead, th {
+  background: aliceblue;
+}
+/* Center the class name of a class population widget */
+table.PopTable>thead>tr:first-child  {
+  text-align: center;
+}
+
+menu {
+  width: 14em;
+  text-align: center;
+  border: 1px solid black;
+  padding: 8px;
+  border-radius: 5px;
+}
+menu li {
+  list-style: none;
+  height: 1.5em;
+  margin: 2px auto;
+}
+menu li button {
+  width: 14em;
+}
+
+form :invalid {
+  box-shadow: none;  /* neutralizing FF */
+  outline: dotted red;      
+}
+form > div:not(:last-child)  {
+  margin-bottom: 0.2em;
+}
+form > div > label {
+  position: relative;
+}
+form > div.I-O-field > label {
+  width: 20em;
+  display: block;     /* by default, one labeled control per line*/
+}
+form div.field-group > label {
+  display: inline-block;
+  margin-left: 1em;
+}
+form div.field-group > label:first-child {
+    margin-left: 0;
+}
+form div.field-group > label > input,
+form div.field-group > label > output {
+  margin-left: 0.7em;
+}
+form div.I-O-field > label > input[type="text"],
+form div.select > label > select,
+form div.I-O-field > label > output {
+    position: absolute;
+    left: 12em;
+}
+form div.yes-no-field > label > input[type="checkbox"] {
+    position: absolute;
+    left: 12em;
+}
+form div.action-group {
+  margin-top: 0.5em;
+}
+form div > button {
+  margin-right: 0.5em;  
+}
+
+form fieldset {
+  margin-bottom: 1em;  
+}
+form fieldset > label {
+  margin-right: 1em;  
+}
+form fieldset > label > input[type="radio"],
+    form > fieldset > label > input[type="checkbox"] {
+  margin-right: 0.5em;  
+}
