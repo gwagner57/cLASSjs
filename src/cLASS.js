@@ -67,24 +67,29 @@ function cLASS (classSlots) {
         } else this[p] = val;
         delete instanceSlots[p];
       } else if (propDs[p].initialValue !== undefined) {
-        // assign initial value to properties without an initialization slot
-        if (typeof propDs[p].initialValue === "function")
-          propsWithInitialValFunc.push( p);
-        else this[p] = propDs[p].initialValue;
+        // assign initial value
+        if (typeof propDs[p].initialValue === "function") {
+          propsWithInitialValFunc.push(p);
+        } else this[p] = propDs[p].initialValue;
       } else if (!propDs[p].optional) {
         // assign default value to mandatory properties without an initialization slot
         if (cLASS.isIntegerType(range) || cLASS.isDecimalType(range)) {
           this[p] = 0;
-        } else if (range==="String") {
+        } else if (range === "String") {
           this[p] = "";
-        } else if (range==="Boolean") {
+        } else if (range === "Boolean") {
           this[p] = false;
         } else if (typeof range === "string" && cLASS[range] ||
-            typeof range === "object" && ["Array","ArrayList"].includes(range["dataType"])) {
+            typeof range === "object" && ["Array", "ArrayList"].includes(range["dataType"])) {
           this[p] = [];
         } else if (typeof range === "object" && range["dataType"] === "Map") {
           this[p] = {};
         }
+      }
+      // initialize historical properties
+      if (propDs[p].historySize) {
+        this.history = this.history || {};
+        this.history[p] = [];
       }
     }, this);
     // call the functions for initial value expressions
@@ -646,8 +651,11 @@ cLASS.isIntegerType = function (T) {
  * returning the corresponding datatype definition record like {dataType:"Array",
  * itemType:"Decimal", size: 3}.
  */
-cLASS.Array = function (itemType, size) {
+cLASS.Array = function (itemType, size, constraints) {
    return {dataType:"Array", itemType: itemType, size: size};
+  if (constraints) {
+    return {dataType:"Array", itemType: itemType, size: size, constraints: constraints};
+  } else return {dataType:"Array", itemType: itemType, size: size};
  };
 cLASS.ArrayList = function (itemType, constraints) {
    if (constraints) {

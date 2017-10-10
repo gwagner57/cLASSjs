@@ -1,5 +1,5 @@
 # cLASSjs
-A JS library for defining enumerations, constructor-based classes, and class hierarchies, with semantic meta-data for declarative constraint validation and for generating model-based CRUD user interfaces.
+A JS library for defining enumerations, constructor-based classes, and class hierarchies, with semantic meta-data for declarative constraint validation and for generating model-based user interfaces.
 
 ## Use Case 1: Enumerations and Enumeration Attributes
 

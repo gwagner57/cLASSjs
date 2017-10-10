@@ -412,9 +412,9 @@ oBJECTvIEW.prototype.render = function (parentEl) {
    * depends on: fieldOrder
    * @method
    */
-  function createUiElemsForViewFields() {
+  function createUiElemsForVmFields() {
     //============= Inner Function ==============================
-    function createUiElemForViewField (containerEl, fld) {
+    function createUiElemForVmField (containerEl, fld) {
       var range = fields[fld].range,
           isEnum = range instanceof eNUMERATION,
           isArr = Array.isArray( range);
@@ -447,11 +447,11 @@ oBJECTvIEW.prototype.render = function (parentEl) {
     fieldOrder.forEach( function (fldOrdEl) {
       var containerEl = document.createElement("div");
       if (!Array.isArray( fldOrdEl)) {  // single field
-        createUiElemForViewField( containerEl, fldOrdEl);
+        createUiElemForVmField( containerEl, fldOrdEl);
       } else {  // field group
         containerEl.className = "field-group";
         fldOrdEl.forEach( function (fld) {
-          createUiElemForViewField( containerEl, fld);
+          createUiElemForVmField( containerEl, fld);
         });
       }
       uiContainerEl.appendChild( containerEl);
@@ -503,7 +503,7 @@ oBJECTvIEW.prototype.render = function (parentEl) {
     uiContainerEl.reset();
   }
   // create DOM elements for all UI/view fields
-  createUiElemsForViewFields();
+  createUiElemsForVmFields();
   // create DOM elements (like buttons) for all user actions of the UI/view model
   createUiElemsForUserActions( uiContainerEl);
   return dataBinding;  // a map of field names to corresponding DOM elements 
@@ -608,25 +608,23 @@ oBJECTvIEW.createUiElemsForUserActions = function (userActions) {
   return containerEl;
 };
 /**
- * Render an HTML form based on an abstract UI definition
+ * Render an HTML form based on a view model (an abstract UI definition)
  * @author Gerd Wagner
  * @method
- * @return {object} dataBinding
  */
-oBJECTvIEW.renderUiDef = function (uiDef) {
-  var outFields = uiDef.outFields,  // map of field definitions
-      inFields = uiDef.inFields,  // map of field definitions
+oBJECTvIEW.renderViewModel = function (viewModel) {
+  var outFields = viewModel.outputFields,  // map of field definitions
+      inFields = viewModel.inputFields,  // map of field definitions
       fields = {},
       // list of field names or field name lists
-      fieldOrder = uiDef.fieldOrder ||
+      fieldOrder = viewModel.fieldOrder ||
           Object.keys( outFields).concat( Object.keys( inFields)),
-      fieldValues = uiDef.fieldValues,
-      userActions = uiDef.userActions,
+      fieldValues = viewModel.fieldValues,
+      userActions = viewModel.userActions,
       // a map for storing the bindings of DOM form elems to UI fields
       dataBinding = {},
-      validateOnInput = uiDef.validateOnInput || true,
-      fldGrpSep = uiDef.fieldGroupSeparator,
-      maxELforButton = 7,
+      validateOnInput = viewModel.validateOnInput || true,
+      fldGrpSep = viewModel.fieldGroupSeparator,
       uiContainerEl=null, footerEl=null, i=0;
   /* ==================================================================== */
   /**
@@ -666,7 +664,8 @@ oBJECTvIEW.renderUiDef = function (uiDef) {
     // render text input element
     fldEl.name = fld;
     if (fieldValues && fieldValues[fld]) {
-      fldEl.value = fieldValues[fld];
+      if (typeof fieldValues[fld] === "function") fldEl.value = fieldValues[fld]();
+      else fldEl.value = fieldValues[fld];
     } else fldEl.value = "";
     fldEl.size = 7;
     if (fields[fld].hint) lblEl.title = fields[fld].hint;
@@ -802,16 +801,16 @@ oBJECTvIEW.renderUiDef = function (uiDef) {
    * depends on: fieldOrder
    * @method
    */
-  function createUiElemsForViewFields() {
+  function createUiElemsForVmFields() {
     //============= Inner Function ==============================
-    function createUiElemForViewField (containerEl, fld) {
+    function createUiElemForVmField (containerEl, fld) {
       var range = fields[fld].range,
           isEnum = range instanceof eNUMERATION,
           isArr = Array.isArray( range);
       if (isEnum || isArr) {  // (ad-hoc) enumeration
-        if (isEnum && range.MAX <= maxELforButton ||
-            isArr && range.length <= maxELforButton) {
-          containerEl = createChoiceButtonGroup( fld);
+        if (isEnum && range.MAX <= oBJECTvIEW.maxCardButtonGroup ||
+            isArr && range.length <= oBJECTvIEW.maxCardButtonGroup) {
+          containerEl.appendChild( createChoiceButtonGroup( fld));
           if (!containerEl.className) containerEl.className = "choice";
         } else {
           if (!containerEl.className) containerEl.className = "select";
@@ -837,11 +836,11 @@ oBJECTvIEW.renderUiDef = function (uiDef) {
     fieldOrder.forEach( function (fldOrdEl) {
       var containerEl = document.createElement("div");
       if (!Array.isArray( fldOrdEl)) {  // single field
-        createUiElemForViewField( containerEl, fldOrdEl);
+        createUiElemForVmField( containerEl, fldOrdEl);
       } else {  // field group
         containerEl.className = "field-group";
         fldOrdEl.forEach( function (fld) {
-          createUiElemForViewField( containerEl, fld);
+          createUiElemForVmField( containerEl, fld);
         });
       }
       uiContainerEl.appendChild( containerEl);
@@ -865,21 +864,21 @@ oBJECTvIEW.renderUiDef = function (uiDef) {
       parentEl.appendChild( containerEl);
     });
   }
-  /* ==================================================================== */
-  /* MAIN CODE                                                 */
-  /* ==================================================================== */
-  if (!fieldValues) fieldValues = uiDef.fieldValues = {};
+  /* ====================================================================
+     M A I N
+     ==================================================================== */
+  if (!fieldValues) fieldValues = viewModel.fieldValues = {};
   Object.keys( outFields).forEach( function (fld) {
     outFields[fld].inputOutputMode = "O";
   });
   fields = util.mergeObjects( outFields, inFields);
   uiContainerEl = dom.createElement("form");
-  if (uiDef.formID) uiContainerEl.id = uiDef.formID;
-  if (uiDef.heading) {
-    uiContainerEl.appendChild( dom.createElement("h2", {content:uiDef.heading}));
+  if (viewModel.formID) uiContainerEl.id = viewModel.formID;
+  if (viewModel.title) {
+    uiContainerEl.appendChild( dom.createElement("h2", {content:viewModel.title}));
   }
-  // store the object view's DOM element
-  uiDef.domElem = uiContainerEl;
+  // store the view model's DOM element
+  viewModel.domElem = uiContainerEl;
   footerEl = document.querySelector("html>body>footer");
   if (footerEl) {
     document.body.insertBefore( uiContainerEl, footerEl);
@@ -895,8 +894,11 @@ oBJECTvIEW.renderUiDef = function (uiDef) {
   }
   */
   // create DOM elements for all UI/view fields
-  createUiElemsForViewFields();
+  createUiElemsForVmFields();
   // create DOM elements (like buttons) for all user actions of the UI/view model
   createUiElemsForUserActions( uiContainerEl);
-  return dataBinding;  // a map of field names to corresponding DOM elements
+  // store the view model's data binding (map field names to corresponding DOM elements)
+  viewModel.dataBinding = dataBinding;
 };
+oBJECTvIEW.maxCardButtonGroup = 7;
+
