@@ -58,6 +58,9 @@ form div.field-group > label {
 form div.field-group > label:first-child {
     margin-left: 0;
 }
+form output {
+  background-color: gainsboro;
+}
 form div.field-group > label > input,
 form div.field-group > label > output {
   margin-left: 0.7em;

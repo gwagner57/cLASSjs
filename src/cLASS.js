@@ -88,12 +88,14 @@ function cLASS (classSlots) {
       }
       // initialize historical properties
       if (propDs[p].historySize) {
-        this.history = this.history || {};
-        this.history[p] = [];
+        this.history = this.history || {};  // a map
+        this.history[p] = propDs[p].decimalPlaces ?
+            new cLASS.RingBuffer( propDs[p].range, propDs[p].historySize,
+                {decimalPlaces: propDs[p].decimalPlaces}) :
+            new cLASS.RingBuffer( propDs[p].range, propDs[p].historySize);
       }
     }, this);
     // call the functions for initial value expressions
-    // NOTE: this can only be called in a second pass
     propsWithInitialValFunc.forEach( function (p) {
       this[p] = propDs[p].initialValue.call(this);
     }, this);
@@ -652,10 +654,18 @@ cLASS.isIntegerType = function (T) {
  * itemType:"Decimal", size: 3}.
  */
 cLASS.Array = function (itemType, size, constraints) {
-   return {dataType:"Array", itemType: itemType, size: size};
+  /*
   if (constraints) {
     return {dataType:"Array", itemType: itemType, size: size, constraints: constraints};
   } else return {dataType:"Array", itemType: itemType, size: size};
+  */
+  this.type = "RingBuffer";
+  this.itemType = itemType;
+  this.constraints = constraints;  //TODO
+  this.size = size;
+  this.first = 0;  // index of first item
+  this.last = -1;  // index of last item
+  this.buffer = new Array( size);
  };
 cLASS.ArrayList = function (itemType, constraints) {
    if (constraints) {
@@ -667,3 +677,56 @@ cLASS.Map = function (itemType, constraints) {
     return {dataType:"Map", itemType: itemType, constraints: constraints};
   } else return {dataType:"Map", itemType: itemType};
 };
+
+cLASS.RingBuffer = function (itemType, size, optParams) {
+  if (this instanceof cLASS.RingBuffer) {
+    // called with new, so return a ring buffer object
+    this.type = "RingBuffer";
+    this.itemType = itemType;
+    this.size = size;
+    if (optParams) {
+      if (optParams.constraints) this.constraints = optParams.constraints; //TODO
+      if (optParams.decimalPlaces) this.decimalPlaces = optParams.decimalPlaces;
+    }
+    this.first = 0;  // index of first item
+    this.last = -1;  // index of last item
+    this.buffer = new Array( size);
+  } else {
+    // called without new, return an object representing a RingBuffer datatype
+    return new cLASS.cOMPLEXdATATYPE("RingBuffer",
+        {itemType:itemType, size:size, constraints:constraints})
+  }
+};
+cLASS.RingBuffer.prototype.nmrOfItems = function () {
+  if (this.last === -1) return 0;
+  else if (this.first <= this.last) return this.last - this.first + 1;
+  else return this.last + this.size - this.first + 1;
+}
+ cLASS.RingBuffer.prototype.add = function (item) {
+   if (this.nmrOfItems() < this.size) {
+     this.last++;  // still filling the buffer
+   } else {  // buffer is full, move both pointers
+     this.first = (this.first+1) % this.size;
+     this.last = (this.last+1) % this.size;
+   }
+   this.buffer[this.last] = item;
+ }
+cLASS.RingBuffer.prototype.toString = function (n) {
+  var i=0, str = "[", item, roundingFactor=1,
+      N = this.nmrOfItems(),
+      outputLen = n ? Math.min( n, N): N;
+  if (N === 0) return " ";
+  for (i=0; i < outputLen; i++) {
+    item = this.buffer[(this.first+i) % this.size];
+    // serialize enum values as labels
+    if (this.itemType instanceof eNUMERATION) item = this.itemType.labels[item];
+    else if (cLASS.isDecimalType( this.itemType)) {
+      //decimalPlaces:
+      roundingFactor = Math.pow( 10, this.decimalPlaces);
+      item = Math.round( item * roundingFactor) / roundingFactor;
+    }
+    str += item;
+    if (i < outputLen-1) str += ", ";
+  }
+  return str + "]";
+ }

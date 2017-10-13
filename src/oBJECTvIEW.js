@@ -875,7 +875,7 @@ oBJECTvIEW.renderViewModel = function (viewModel) {
   uiContainerEl = dom.createElement("form");
   if (viewModel.formID) uiContainerEl.id = viewModel.formID;
   if (viewModel.title) {
-    uiContainerEl.appendChild( dom.createElement("h2", {content:viewModel.title}));
+    uiContainerEl.appendChild( dom.createElement("h1", {content:viewModel.title}));
   }
   // store the view model's DOM element
   viewModel.domElem = uiContainerEl;
