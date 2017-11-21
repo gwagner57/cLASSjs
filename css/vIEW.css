@@ -7,6 +7,7 @@ body {
 }
 
 table { 
+  border-collapse:collapse;
   margin: 1em 0;
 }  
 table, td, th { 
@@ -36,10 +37,81 @@ menu li {
 menu li button {
   width: 14em;
 }
-
+/*** Modal Window and Draggable Modal Window ***/
+#overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+  background-color:rgba(0,0,0, 0.5);  /* 50% opacity */
+  animation: overlay-with-modal .3s forwards ease;
+}
+@keyframes overlay-with-modal {
+  from {transform:scale(0.5); background-color:rgba(0,0,0, 0);}
+  to {transform:scale(1); background-color:rgba(0,0,0, 0.5);}
+}
+.modal {
+  width: 680px;
+  max-width: 100%;
+  height: 300px;
+  max-height: 100%;
+  overflow: auto;
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);  /* for centering */
+  background-color: #eee;
+}
+.modal > h1 {
+  margin: 0;
+  padding: 0.5em;
+  color: #eee;
+  background-color: blue;
+  font-size: 120%;
+  height: 2em;
+}
+.modal > h1 > span.title {
+  display: inline-block;
+  padding-top: 0.4em;
+}
+.modal > h1 > span.closeButton {
+  color: #eee;
+  float: right;
+  font-size: 180%;
+  font-weight: bold;
+}
+.modal .modal-body {
+  padding: 0.5em;
+}
+.modal label {
+  line-height: 1.5;
+}
+.modal.action-required > h1{
+  background-color: green;
+}
+.modal.error > h1{
+  background-color: deeppink;
+}
+.modal .closeButton:hover,
+.modal .closeButton:focus {
+  color: black;
+  text-decoration: none;
+  cursor: pointer;
+}
+[draggable=true] {
+  outline: 1px solid black;
+  cursor: move;
+  overflow: auto;
+  resize: both;
+}
+/*********************************************/
 form :invalid {
   box-shadow: none;  /* neutralizing FF */
   outline: dotted red;      
+}
+form > h1 {  /* form title */
+  font-size: 120%;
 }
 form > div:not(:last-child)  {
   margin-bottom: 0.2em;
@@ -48,17 +120,23 @@ form > div > label {
   position: relative;
 }
 form > div.I-O-field > label {
-  width: 20em;
+  width: 40em;
   display: block;     /* by default, one labeled control per line*/
 }
 form div.field-group > label {
   display: inline-block;
+  width: 20em;
   margin-left: 1em;
 }
 form div.field-group > label:first-child {
-    margin-left: 0;
+  margin-left: 0;
+}
+form div.field-group > label > output {
+  position: absolute;
+  left: 12em;
 }
 form output {
+  min-width: 2em;
   background-color: gainsboro;
 }
 form div.field-group > label > input,
@@ -66,15 +144,18 @@ form div.field-group > label > output {
   margin-left: 0.7em;
 }
 form div.I-O-field > label > input[type="text"],
+form div.yes-no-field > label > input[type="checkbox"],
 form div.select > label > select,
 form div.I-O-field > label > output {
-    position: absolute;
-    left: 12em;
+  position: absolute;
+  left: 12em;
 }
+/*
 form div.yes-no-field > label > input[type="checkbox"] {
-    position: absolute;
-    left: 12em;
+  position: absolute;
+  left: 2em;
 }
+*/
 form div.action-group {
   margin-top: 0.5em;
 }

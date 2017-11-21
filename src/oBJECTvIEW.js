@@ -192,10 +192,10 @@ var oBJECTvIEW = function (slots) {
     // bottom-up data-binding: assign UI/form field
     if (uiEl.tagName === "INPUT" || uiEl.tagName === "OUTPUT") {
       if (!Array.isArray(v)) {
-        uiEl.value = cLASS.convertPropValToString( mc, f, v);
+        uiEl.value = cLASS.convertPropValToString( mo, f, v);
       } else {
         v.forEach( function (el,i) {
-          var ds = cLASS.convertPropValToString( mc, f, el);
+          var ds = cLASS.convertPropValToString( mo, f, el);
           if (i===0) uiEl.value = ds;
           else uiEl.value += fldGrpSep + ds;
         });
@@ -390,7 +390,7 @@ oBJECTvIEW.prototype.render = function (parentEl) {
     } else {  // range is an entity type
       choiceItems = Object.keys( range.instances);
     }
-    dom.fillSelectWithOptions( selEl, choiceItems);
+    dom.fillSelectWithOptionsFromArrayList( selEl, choiceItems);
     selEl.addEventListener("change", function () {
       // UI element to model property data binding (top-down)
       if (selEl.value !== "") {
@@ -560,7 +560,8 @@ oBJECTvIEW.createClassPopulationWidget = function (Class, editableProperties) {
       var c=null;
       if (columnProperties.includes( p)) {
         c = rowEl.insertCell();
-        c.textContent = cLASS.convertPropValToStr( Class, p, obj[p]);
+        //c.textContent = cLASS.convertPropValToStr( Class, p, obj[p]);
+        c.textContent = obj.convertPropValToString( p);
         // save value for being able to restore it
         c.setAttribute("data-oldVal", c.textContent);
         c.setAttribute("contenteditable","true");
@@ -612,7 +613,7 @@ oBJECTvIEW.createUiElemsForUserActions = function (userActions) {
  * @author Gerd Wagner
  * @method
  */
-oBJECTvIEW.renderViewModel = function (viewModel) {
+oBJECTvIEW.createUiFromViewModel = function (viewModel) {
   var outFields = viewModel.outputFields,  // map of field definitions
       inFields = viewModel.inputFields,  // map of field definitions
       fields = {},
@@ -625,7 +626,7 @@ oBJECTvIEW.renderViewModel = function (viewModel) {
       dataBinding = {},
       validateOnInput = viewModel.validateOnInput || true,
       fldGrpSep = viewModel.fieldGroupSeparator,
-      uiContainerEl=null, footerEl=null, i=0;
+      uiContainerEl=null;
   /* ==================================================================== */
   /**
    * Create a labeled text field. When validation is not performed on input
@@ -635,25 +636,25 @@ oBJECTvIEW.renderViewModel = function (viewModel) {
    */
   function createLabeledTextField( fld) {
     var fldEl = null, lblEl = document.createElement("label"),
-        decl = fields[fld];   // field declaration
-    if (decl.inputOutputMode === "O") {
+        fDecl = fields[fld];   // field declaration
+    if (fDecl.inputOutputMode === "O") {
       fldEl = document.createElement("output");
     } else {
       fldEl = document.createElement("input");
       fldEl.type = "text";
       if (validateOnInput) {
         fldEl.addEventListener("input", function () {
-          fldEl.setCustomValidity( cLASS.check( fld, decl, fldEl.value).message);
+          fldEl.setCustomValidity( cLASS.check( fld, fDecl, fldEl.value).message);
         });
       } else {
         fldEl.addEventListener("blur", function () {
-          fldEl.setCustomValidity( cLASS.check( fld, decl, fldEl.value).message);
+          fldEl.setCustomValidity( cLASS.check( fld, fDecl, fldEl.value).message);
         });
       }
       fldEl.addEventListener("change", function () {
         var v = fldEl.value;
         if (!validateOnInput) {
-          fldEl.setCustomValidity( cLASS.check( fld, decl, v).message);
+          fldEl.setCustomValidity( cLASS.check( fld, fDecl, v).message);
         }
         // UI element to model property data binding (top-down)
         if (fldEl.validity.valid) fieldValues[fld] = v;
@@ -663,13 +664,12 @@ oBJECTvIEW.renderViewModel = function (viewModel) {
     dataBinding[fld] = fldEl;
     // render text input element
     fldEl.name = fld;
-    if (fieldValues && fieldValues[fld]) {
-      if (typeof fieldValues[fld] === "function") fldEl.value = fieldValues[fld]();
-      else fldEl.value = fieldValues[fld];
-    } else fldEl.value = "";
+    if (typeof fDecl.fieldValue === "function") {
+      fldEl.value = fDecl.fieldValue();
+    } else fldEl.value = fDecl.fieldValue || "";
     fldEl.size = 7;
-    if (fields[fld].hint) lblEl.title = fields[fld].hint;
-    lblEl.textContent = fields[fld].label;
+    if (fDecl.hint) lblEl.title = fDecl.hint;
+    lblEl.textContent = fDecl.label;
     lblEl.appendChild( fldEl);
     return lblEl;
   }
@@ -779,7 +779,7 @@ oBJECTvIEW.renderViewModel = function (viewModel) {
     } else {  // range is an entity type
       choiceItems = Object.keys( range.instances);
     }
-    dom.fillSelectWithOptions( selEl, choiceItems);
+    dom.fillSelectWithOptionsFromArrayList( selEl, choiceItems);
     selEl.addEventListener("change", function () {
       // UI element to model property data binding (top-down)
       if (selEl.value !== "") {
@@ -879,12 +879,6 @@ oBJECTvIEW.renderViewModel = function (viewModel) {
   }
   // store the view model's DOM element
   viewModel.domElem = uiContainerEl;
-  footerEl = document.querySelector("html>body>footer");
-  if (footerEl) {
-    document.body.insertBefore( uiContainerEl, footerEl);
-  } else {
-    document.body.appendChild( uiContainerEl);
-  }
   /*
   if (uiContainerEl.tagName === "FORM") {  // reset custom validity
     for (i=0; i < uiContainerEl.elements.length; i++) {
@@ -899,6 +893,7 @@ oBJECTvIEW.renderViewModel = function (viewModel) {
   createUiElemsForUserActions( uiContainerEl);
   // store the view model's data binding (map field names to corresponding DOM elements)
   viewModel.dataBinding = dataBinding;
+  return uiContainerEl;
 };
 oBJECTvIEW.maxCardButtonGroup = 7;
 

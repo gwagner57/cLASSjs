@@ -8,7 +8,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Test cLASS</title>
+  <title>cLASS-TestSuite01</title>
   <meta name="viewport" content="width=device-width, initial-scale = 1.0" />
   <link rel="stylesheet" href="../css/normalize.css" />
   <style>
@@ -20,14 +20,14 @@
   <script src="../lib/browserShims.js"></script>
   <script src="../lib/dom.js"></script>
   <!-- cLASS Libraries -->
-  <script src="../../oNTOjs/src/eNUMERATION.js"></script>
   <script src="../lib/errorTypes.js"></script>
-  <script src="../lib/cLASS.js"></script>
+  <script src="../src/eNUMERATION.js"></script>
+  <script src="../src/cLASS.js"></script>
 
   <script src="test.js"></script>
 </head>
 <body>
- <h1>Test cLASS</h1>
+ <h1>cLASS Test Suite 01: Basic Issues</h1>
  <p>Testing if a JS object <code>C</code> is a cLASS can only be done with
    <code>(C.constructor === cLASS)</code> and not with <code>(C instanceof cLASS)</code>.</p>
 
@@ -36,13 +36,14 @@
 /****************************************
  *** Test code **************************
  ****************************************/
+ try {
    var ServiceDesk = new cLASS({
      Name: "ServiceDesk",
      properties: {
-       "id": {range: "String", label: "ID"},
+       "id": {range: "PositiveInteger", label: "ID"},
        "queueLength": { range: "NonNegativeInteger", initialValue: 0, label: "Queue length"},
        "isBusy": { range: "Boolean", initialValue: false},
-       "pos": {range: c.Array("Decimal",2)}
+       "pos": {range: cLASS.Array("Decimal",2)}
      }
    });
    var sD = new ServiceDesk({id: 1, queueLength: 7, isBusy: false});
@@ -59,6 +60,10 @@
      }
    });
    var custArrEvt = new CustomerArrival({occTime:1, serviceDesk: 1});
+} catch (e) {
+  console.log( e.constructor.name +": "+ e.message);
+}
+
 
    //*** Test Suite 1 ***************************
    document.body.appendChild( dom.createElement("h2",{content:"Test Suite 1: Accessing properties"}));

@@ -8,6 +8,11 @@
  * @this {eNUMERATION}
  * @param {string} name  The name of the new enumeration data type.
  * @param {array} enumArg  The labels array or code list map of the enumeration
+ *
+ * An eNUMERATION has the following properties:
+ * labels         an array list of label strings such that enumLabel = labels[enumIndex-1]
+ * enumLitNames
+ *
  */
 /* globals eNUMERATION */
 function eNUMERATION( name, enumArg) {
@@ -36,7 +41,7 @@ function eNUMERATION( name, enumArg) {
       throw new Error("All values of a code list map must be strings!");
     }
     this.codeList = enumArg;
-    // use the codes as the names of enumeration literals
+    // use codes as the names of enumeration literals
     this.enumLitNames = Object.keys( this.codeList);
     this.labels = this.enumLitNames.map(function (c) {
       return enumArg[c] + " (" + c + ")";

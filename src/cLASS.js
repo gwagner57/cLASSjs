@@ -17,6 +17,10 @@
  *   // or, alternatively,
  *   if (myObj instanceof MyObject) ...
  *
+ * Notice that it is assumed that a class has (or inherits) an "id" attribute
+ * as its standard ID attribute.
+ *
+ *
  * @copyright Copyright 2015-2017 Gerd Wagner, Chair of Internet Technology,
  *   Brandenburg University of Technology, Germany.
  * @license The MIT License (MIT)
@@ -34,7 +38,7 @@ function cLASS (classSlots) {
     throw "Specified supertype "+ supertypeName +" has not been defined!";
   }
   if (!Object.keys( propDs).every( function (p) {
-        return !!propDs[p].range
+        return (propDs[p].range !== undefined);
       }) ) {
     throw "No range defined for some property of class "+ classSlots.Name +" !";
   }
@@ -46,10 +50,13 @@ function cLASS (classSlots) {
     }
     // assign own properties
     Object.keys( propDs).forEach( function (p) {
-      var range = propDs[p].range, val, rangeClasses=[], i=0, objRef=null;
+      var range = propDs[p].range,
+          val, rangeClasses=[], i=0, objRef=null, validationResult=null;
       if (typeof instanceSlots === "object" && instanceSlots[p]) {
         // property p has an initialization slot
         val = instanceSlots[p];
+        validationResult = cLASS.check( p, propDs[p], val);
+        if (!(validationResult instanceof NoConstraintViolation)) throw validationResult;
         // is range a class (or class disjunction)?
         if (typeof range === "string" && typeof val !== "object" &&
             (cLASS[range] || range.includes("|"))) {
@@ -67,7 +74,7 @@ function cLASS (classSlots) {
         } else this[p] = val;
         delete instanceSlots[p];
       } else if (propDs[p].initialValue !== undefined) {
-        // assign initial value
+        // no initialization slot, assign initial value
         if (typeof propDs[p].initialValue === "function") {
           propsWithInitialValFunc.push(p);
         } else this[p] = propDs[p].initialValue;
@@ -130,6 +137,15 @@ function cLASS (classSlots) {
     });
   } else {  // if class is root class
     constr.properties = propDs;
+    constr.prototype.set = function ( prop, val) {
+      // this = object
+      var constrViol = cLASS.check( prop, this.constructor.properties[prop], val);
+      if (constrViol instanceof NoConstraintViolation) {
+        this[prop] = constrViol.checkedValue;
+      } else {
+        throw constrViol;
+      }
+    };
     // overwrite and improve the standard toString method
     constr.prototype.toString = function () {
       var str1="", str2="", i=0;
@@ -151,7 +167,7 @@ function cLASS (classSlots) {
               valStr = this[key].map( function (o) {return o.id;}).toString();
             } else valStr = JSON.stringify( Object.keys( this[key]));
           } else {  // if the property is single-valued
-            valStr = this[key].id;
+            valStr = String( this[key].id);
           }
         } else if (typeof this[key] === "function") {
           // the slot is an instance-level method slot
@@ -167,6 +183,77 @@ function cLASS (classSlots) {
       str2 += "}";
       if (str2 === "{ }") str2 = "";
       return str1 + str2;
+    };
+    /***************************************************/
+    constr.prototype.toRecord = function () {
+    /***************************************************/
+      var obj = this, rec={}, propDecl={}, valuesToConvert=[], range, val;
+      Object.keys( obj).forEach( function (p) {
+        if (obj[p] !== undefined) {
+          val = obj[p];
+          propDecl = obj.constructor.properties[p];
+          range = propDecl.range;
+          if (propDecl.maxCard && propDecl.maxCard > 1) {
+            if (range.constructor && range.constructor === cLASS) { // object reference(s)
+              if (Array.isArray( val)) {
+                valuesToConvert = val.slice(0);  // clone;
+              } else {  // map from ID refs to obj refs
+                valuesToConvert = Object.values( val);
+              }
+            } else if (Array.isArray( val)) {
+              valuesToConvert = val.slice(0);  // clone;
+            } else console.log("Invalid non-array collection in toRecord!");
+          } else {  // maxCard=1
+            valuesToConvert = [val];
+          }
+          valuesToConvert.forEach( function (v,i) {
+            // alternatively: enum literals as labels
+            // if (range instanceof eNUMERATION) rec[p] = range.labels[val-1];
+            if (["number","string","boolean"].includes( typeof(v)) || !v) {
+              valuesToConvert[i] = String( v);
+            } else if (range === "Date") {
+              valuesToConvert[i] = util.createIsoDateString( v);
+            } else if (range.constructor && range.constructor === cLASS) { // object reference(s)
+              valuesToConvert[i] = v.id;
+            } else if (Array.isArray( v)) {  // JSON-compatible array
+              valuesToConvert[i] = v.slice(0);  // clone
+            } else valuesToConvert[i] = JSON.stringify( v);
+          });
+          if (!propDecl.maxCard || propDecl.maxCard <= 1) {
+            rec[p] = valuesToConvert[0];
+          } else {
+            rec[p] = valuesToConvert;
+          }
+        }
+      });
+      return rec;
+    };
+    /**
+     * Convert property value to form field value.
+     * @method
+     * @author Gerd Wagner
+     * @param {cLASS} Class  The domain of the property.
+     * @param {string} prop  The property name.
+     * @param {?} val  The value to be converted.
+     * @return {boolean}
+     */
+    constr.prototype.convertPropValToString = function ( prop) {
+      // make sure the eNUMERATION meta-class object can be checked if available
+      var eNUMERATION = typeof eNUMERATION === "undefined" ? undefined : eNUMERATION;
+      var range = this.constructor.properties[prop].range,
+          val = this[prop];
+      if (val === undefined || val === null) return "";
+      if (eNUMERATION && range instanceof eNUMERATION) return range.labels[val-1];
+      if (typeof val === "string") return val;
+      if (["number","boolean"].includes( typeof(val))) return String( val);
+      if (range === "Date") return util.createIsoDateString( val);
+      // show the value of a reference property as an ID reference
+      if (typeof range === "string" && cLASS[range]) {
+        if (typeof range === "object" && val.id !== undefined) return val.id;
+        else return "";
+      }
+      // else
+      return JSON.stringify( val);
     };
     // define a concise serialization method for logging
     constr.prototype.toLogString = function () {
@@ -208,6 +295,23 @@ function cLASS (classSlots) {
       if (str2 === "{ }") str2 = "";
       return str1 + str2;
     };
+    /**
+     * Generic method for converting rows/records to model objects
+     * @method
+     * @author Gerd Wagner
+     * @param {object} record  The record/row to be converted
+     */
+    constr.convertRec2Obj = function (record) {
+      var obj={};
+      try {
+        obj = new constr( record);
+      } catch (e) {
+        console.log( e.constructor.name + " while deserializing a "+
+            constr.Name +" record: " + e.message);
+        obj = null;
+      }
+      return obj;
+    };
   }
   // assign instance-level methods
   Object.keys( methods).forEach( function (m) {
@@ -242,7 +346,7 @@ cLASS.isIntegerType = function (T) {
   */
  cLASS.isDecimalType = function (T) {
    return typeof(T)==="string" &&
-       (T==="Decimal" || T.includes('UnitInterval'));
+       (T.includes("Decimal") || T.includes("UnitInterval"));
  };
  /**
   * Constants
@@ -253,7 +357,7 @@ cLASS.isIntegerType = function (T) {
    // proposed by Diego Perini (https://gist.github.com/729294)
    URL: /^(?:(?:https?|ftp):\/\/)(?:\S+(?::\S*)?@)?(?:(?!(?:10|127)(?:\.\d{1,3}){3})(?!(?:169\.254|192\.168)(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z\u00a1-\uffff0-9]-*)*[a-z\u00a1-\uffff0-9]+)(?:\.(?:[a-z\u00a1-\uffff0-9]-*)*[a-z\u00a1-\uffff0-9]+)*(?:\.(?:[a-z\u00a1-\uffff]{2,}))\.?)(?::\d{2,5})?(?:[/?#]\S*)?$/i,
    INT_PHONE_NO: /^\+(?:[0-9] ?){6,14}[0-9]$/
- }
+ };
  /**
   * Generic method for checking the integrity constraints defined in property declarations.
   * The values to be checked are first parsed/deserialized if provided as strings.
@@ -274,7 +378,7 @@ cLASS.isIntegerType = function (T) {
   * @param {string|number|boolean|object} val  The value to be checked.
   * @return {ConstraintViolation}  The constraint violation object.
   */
- cLASS.check = function (fld, decl, val) {
+ cLASS.check = function (fld, decl, val, optParams) {
    var constrVio=null, valuesToCheck=[],
        msg = decl.patternMessage || "",
        minCard = decl.minCard || 0,  // by default, a multi-valued property is optional
@@ -498,18 +602,20 @@ cLASS.isIntegerType = function (T) {
              }
            });
          }
-       } else {
+       } else if (optParams && optParams.checkRefInt) {
          // the range is a cLASS or a cLASS disjunction
          valuesToCheck.forEach(function (v, i) {
            var rangeClasses = [];
-           // assuming that the ID reference represents an integer (ID)
-           if (typeof v === "string") v = valuesToCheck[i] = parseInt(v);
-           if (!Number.isInteger(v)) {
-             constrVio = new RangeConstraintViolation("The value (" + val + ") of property '" +
-                 fld + "' is not an integer!");
-           } else if (cLASS[range]) {
+           if (cLASS[range]) {
+             if (v instanceof cLASS[range]) v = valuesToCheck[i] = v.id;  // convert to IdRef
+             else if (typeof v === "string") v = valuesToCheck[i] = parseInt(v);
+             // assuming that the ID reference represents an integer (ID)
+             if (!Number.isInteger(v)) {
+               constrVio = new RangeConstraintViolation("The value (" + val + ") of property '" +
+                   fld + "' is not an integer!");
+             }
              if (!cLASS[range].instances[String(v)]) {
-               constrVio = new RangeConstraintViolation("The value (" + v + ") of property '" +
+               constrVio = new ReferentialIntegrityConstraintViolation("The value " + v + " of property '" +
                    fld + "' is not an ID of any " + range + " object!");
              }
            } else {  // a cLASS disjunction
@@ -518,7 +624,7 @@ cLASS.isIntegerType = function (T) {
              if (!rangeClasses.some(function (rc) {
                    return cLASS[rc].instances[String(v)];
                  })) {
-               throw Error("Referential integrity violation: " + val + " does not reference any of " +
+               constrVio = ReferentialIntegrityConstraintViolation("The value " + val + " does not reference any of " +
                    range + "!");
              }
            }
@@ -578,29 +684,6 @@ cLASS.isIntegerType = function (T) {
    return new NoConstraintViolation( val);
  };
  /**
-  * Convert property value to form field value.
-  * @method
-  * @author Gerd Wagner
-  * @param {cLASS} Class  The domain of the property.
-  * @param {string} prop  The property name.
-  * @param {?} val  The value to be converted.
-  * @return {boolean}
-  */
- cLASS.convertPropValToStr = function ( Class, prop, val) {
-   // make sure the eNUMERATION meta-class object can be checked if available
-   var eNUMERATION = typeof eNUMERATION === "undefined" ? undefined : eNUMERATION;
-   var range = Class.properties[prop].range;
-   if (val === undefined) return "";
-   if (eNUMERATION && range instanceof eNUMERATION) return range.labels[val-1];
-   if (typeof val === "string") return val;
-   if (["number","boolean"].includes( typeof(val))) return String( val);
-   if (range === "Date") return util.createIsoDateString( val);
-   // show the value of a reference property as an ID reference
-   if (typeof range === "string" && cLASS[range]) return val["id"];
-   // else
-   return JSON.stringify( val);
- };
- /**
   * Check if a value is of some type.
   * @method
   * @author Gerd Wagner
@@ -608,64 +691,55 @@ cLASS.isIntegerType = function (T) {
   */
  cLASS.isOfType = function ( v, Type) {
    switch (Type) {
-   case "String": return (typeof v === "string");
-   case "NonEmptyString": return (typeof v === "string" && v.trim() !== "");
-   case "Integer": return Number.isInteger(v);
-   case "NonNegativeInteger": return (Number.isInteger(v) && v >= 0);
-   case "PositiveInteger": return (Number.isInteger(v) && v > 0);
-   case "Decimal": return (typeof v === "number");
-   case "ClosedUnitInterval":
-     return (typeof v === "number" && v>=0 && v<=1);
-   case "OpenUnitInterval":
-     return (typeof v === "number" && v>0 && v<1);
-   default: return true;
- }
- };
- /**
-  * Convert property value to form field value.
-  * @method
-  * @author Gerd Wagner
-  * @param {eNTITYtYPE} ET  The domain of the property.
-  * @param {string} prop  The property name.
-  * @param {?} val  The value to be converted.
-  * @return {boolean}
-  */
- cLASS.convertPropValToString = function ( ET, prop, val) {
-   var range = ET.properties[prop].range;
-   if (val === undefined) return "";
-   if (range instanceof eNUMERATION) return range.labels[val-1];
-   if (typeof(val) === "string") return val;
-   if (["number","boolean"].includes( typeof(val))) return String( val);
-   if (range === "Date") return util.createIsoDateString( val);
-   if (cLASS[range]) return val[range.standardIdAttr];
-   // else
-   return JSON.stringify( val);
+     case "String": return (typeof v === "string");
+     case "NonEmptyString": return (typeof v === "string" && v.trim() !== "");
+     case "Integer": return Number.isInteger(v);
+     case "NonNegativeInteger": return (Number.isInteger(v) && v >= 0);
+     case "PositiveInteger": return (Number.isInteger(v) && v > 0);
+     case "Decimal": return (typeof v === "number");
+     case "ClosedUnitInterval":
+       return (typeof v === "number" && v>=0 && v<=1);
+     case "OpenUnitInterval":
+       return (typeof v === "number" && v>0 && v<1);
+     default: return true;
+   }
  };
 
  /********************************************************
   ***  Collection datatypes  *****************************
   ********************************************************/
 /*
- * cLASS datatypes, such as collection types, are defined in the form of a 
- * "datatype definition record" that specifies the collection type, the 
- * item type and the size of the collection. For readability, 
- * collection types can be defined in the form of function invocations
- * returning the corresponding datatype definition record like {dataType:"Array",
- * itemType:"Decimal", size: 3}.
+ * cLASS datatypes, such as collection types, are defined in the form of
+ * cOLLECTIONdATATYPE objects that specify the collection type, the
+ * item type and the size of the collection.
  */
-cLASS.Array = function (itemType, size, constraints) {
+ cLASS.cOLLECTIONdATATYPE = function (typeName, itemType, size, optParams) {
+   this.type = typeName;
+   this.itemType = itemType;
+   this.size = size;
+   this.optParams = optParams;
+ };
+ cLASS.Array = function (itemType, size, optParams) {
   /*
   if (constraints) {
     return {dataType:"Array", itemType: itemType, size: size, constraints: constraints};
   } else return {dataType:"Array", itemType: itemType, size: size};
   */
-  this.type = "RingBuffer";
-  this.itemType = itemType;
-  this.constraints = constraints;  //TODO
-  this.size = size;
-  this.first = 0;  // index of first item
-  this.last = -1;  // index of last item
-  this.buffer = new Array( size);
+  if (this instanceof cLASS.Array) {
+    // called with new, so return an array object
+    this.type = "Array";
+    this.itemType = itemType;
+    this.size = size;
+    if (optParams) {
+      if (optParams.constraints) this.constraints = optParams.constraints; //TODO
+      if (optParams.decimalPlaces) this.decimalPlaces = optParams.decimalPlaces;
+    }
+    this.array = new Array( size);
+  } else {
+    // called without new, return an object representing an Array datatype
+    return new cLASS.cOLLECTIONdATATYPE("Array",
+        {itemType:itemType, size:size, optParams:optParams});
+  }
  };
 cLASS.ArrayList = function (itemType, constraints) {
    if (constraints) {
@@ -693,15 +767,15 @@ cLASS.RingBuffer = function (itemType, size, optParams) {
     this.buffer = new Array( size);
   } else {
     // called without new, return an object representing a RingBuffer datatype
-    return new cLASS.cOMPLEXdATATYPE("RingBuffer",
-        {itemType:itemType, size:size, constraints:constraints})
+    return new cLASS.cOLLECTIONdATATYPE("RingBuffer",
+        {itemType:itemType, size:size, optParams:optParams});
   }
 };
 cLASS.RingBuffer.prototype.nmrOfItems = function () {
   if (this.last === -1) return 0;
   else if (this.first <= this.last) return this.last - this.first + 1;
   else return this.last + this.size - this.first + 1;
-}
+};
  cLASS.RingBuffer.prototype.add = function (item) {
    if (this.nmrOfItems() < this.size) {
      this.last++;  // still filling the buffer
@@ -710,7 +784,7 @@ cLASS.RingBuffer.prototype.nmrOfItems = function () {
      this.last = (this.last+1) % this.size;
    }
    this.buffer[this.last] = item;
- }
+ };
 cLASS.RingBuffer.prototype.toString = function (n) {
   var i=0, str = "[", item, roundingFactor=1,
       N = this.nmrOfItems(),
@@ -719,7 +793,7 @@ cLASS.RingBuffer.prototype.toString = function (n) {
   for (i=0; i < outputLen; i++) {
     item = this.buffer[(this.first+i) % this.size];
     // serialize enum values as labels
-    if (this.itemType instanceof eNUMERATION) item = this.itemType.labels[item];
+    if (this.itemType instanceof eNUMERATION) item = this.itemType.labels[item-1];
     else if (cLASS.isDecimalType( this.itemType)) {
       //decimalPlaces:
       roundingFactor = Math.pow( 10, this.decimalPlaces);
@@ -729,4 +803,4 @@ cLASS.RingBuffer.prototype.toString = function (n) {
     if (i < outputLen-1) str += ", ";
   }
   return str + "]";
- }
+ };

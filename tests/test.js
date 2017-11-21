@@ -1,8 +1,12 @@
-<!-- ****************************************
-     *** General test framework code ********
-     **************************************** -->
 
-var test = {okay:true};
+function test( message, condition) {
+  if (!condition) {
+    test.okay = false;
+    showFailureMessage( message);
+  }
+}
+test.okay = true;
+
 function showFailureMessage(txt) {
   document.body.appendChild( dom.createElement("p",
 	 {classValues:"failure", content:"Failure: "+ txt}));
@@ -14,10 +18,4 @@ function showSuccessMessage() {
 function showInfo(txt) {
   document.body.appendChild( dom.createElement("p",
 	 {classValues:"info", content:"Info: "+ txt}));
-}
-function test( message, condition) {
-  if (!condition) {
-    okay = false;
-    showFailureMessage( message);
-  }
 }

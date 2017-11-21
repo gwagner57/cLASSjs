@@ -20,31 +20,54 @@ const argv = require( "yargs").argv,
   jshint = require('gulp-jshint');
 
 // the folder where the distribution library file is created.
-var buildFolder = "dist";
+const buildFolder = "dist";
 
-// build the cLASSlib.js file
+// build the cLASSjsBrowserLib.js file
 gulp.task( "build", function() {
   return gulp.src([
-      "src/browserShims.js",
-      "src/errorTypes.js",
-	  "src/eNUMERATION.js",
+      "lib/browserShims.js",
+
+      "lib/errorTypes.js",
+      "lib/util.js",
+      "src/eNUMERATION.js",
+      "src/cLASS.js",
+
+      "lib/dom.js",
       "src/oBJECTvIEW.js",
-      "src/cLASS.js"
+
+      "lib/xhr.js",
+      "src/storage/sTORAGEmANAGER.js"
 	  ])
-    .pipe( concat("cLASSlib.js"))
+    .pipe( concat("cLASSjsBrowserLib.js"))
     .pipe( gulpif( argv.production, uglify()))
     .pipe( gulp.dest( buildFolder))
-    .pipe( notify({message: "'build-cLASSlib' task completed."}));
+    .pipe( notify({message: "cLASSjsBrowserLib.js was built!"}));
+});
+
+// build the cLASSjsNodeLib.js file
+gulp.task( "build-node", function() {
+  return gulp.src([
+    "lib/errorTypes.js",
+    "lib/util.js",
+    "src/eNUMERATION.js",
+    "src/cLASS.js"
+  ])
+      .pipe( concat("cLASSjsNodeLib.js"))
+      .pipe( gulpif( argv.production, uglify()))
+      .pipe( gulp.dest( buildFolder))
+      .pipe( notify({message: "cLASSjsNodeLib.js was built!"}));
 });
 
 
 gulp.task('dev', function () {
   gulp.src([
-      "src/browserShims.js",
-      "src/errorTypes.js",
-	  "src/eNUMERATION.js",
-      "src/oBJECTvIEW.js",
-      "src/cLASS.js"
+      "lib/browserShims.js",
+      "lib/errorTypes.js",
+      "lib/util.js",
+  	  "src/eNUMERATION.js",
+      "src/cLASS.js",
+      "lib/dom.js",
+      "src/oBJECTvIEW.js"
   ])
     .pipe(jshint('.jshintrc'))
     .pipe(jshint.reporter('default'));
