@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en" vocab="http://schema.org/" typeof="WebApplication">
+<head>
+  <meta charset="UTF-8" />
+  <title>cLASSjs Validation App</title>
+  <meta property="applicationCategory" content="Data management" />
+  <meta property="creator" content="Gerd Wagner" /> <!-- should be a Person object instead of text -->
+
+  <link rel="manifest" href="site.webmanifest">
+  <link rel="apple-touch-icon" href="icon.png">
+  <!-- Place favicon.ico in the root directory -->
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png"/>
+  <link rel="icon" type="image/png" href="favicon-32x32.png" sizes="32x32"/>
+  <link rel="icon" type="image/png" href="favicon-16x16.png" sizes="16x16"/>
+  <link rel="mask-icon" href="safari-pinned-tab.svg" color="#5bbad5"/>
+
+  <link rel="stylesheet" href="../../css/normalize.min.css" />
+  <link rel="stylesheet" href="../../css/app-main.css" />
+
+  <!--
+    <script src="../../dist/cLASSjsBrowserLib.js"></script>
+  -->
+  <!-- cLASSjsBrowserLib.js contains the following  -->
+  <script src="../../lib/browserShims.js"></script>
+  <script src="../../lib/util.js"></script>
+  <script src="../../lib/dom.js"></script>
+  <script src="../../lib/errorTypes.js"></script>
+  <script src="../../lib/xhr.js"></script>
+  <script src="../../src/eNUMERATION.js"></script>
+  <script src="../../src/cLASS.js"></script>
+  <script src="../../src/oBJECTvIEW.js"></script>
+  <script src="../../src/storage/sTORAGEmANAGER.js"></script>
+
+  <script src="src/c/initialize.js"></script>
+  <script src="src/m/Book.js"></script>
+  <script>
+    window.addEventListener("load", pl.c.books.manage.initialize);
+  </script>
+</head>
+<body>
+ <header>
+  <div class="wrapper clearfix">
+    <div class="title">
+      <figure><a href="https://plus.google.com/u/0/b/104237216582874489152/104237216582874489152/about">
+        <img property="thumbnailUrl" title="Icon made by Lorc under CC BY 3.0. Available on http://game-icons.net"
+             src="safari-pinned-tab.svg" /></a></figure>
+      <h1>Public Library</h1>
+      <h2>Constraint Validation with cLASSjs</h2>
+      <h3>An example of a JavaScript front-end app with constraint validation built
+        with the <a href="https://bitbucket.org/gwagner57/ontojs">cLASSjs</a> library
+        supporting model-based development</h3>
+    </div>
+    <nav>
+      <ul>
+        <li><button type="button" onclick="pl.v.create.setupUserInterface()">C</button></li>
+        <li><button type="button" onclick="pl.v.retrieveAndListAll.setupUserInterface()">R</button></li>
+        <li><button type="button" onclick="pl.v.update.setupUserInterface()">U</button></li>
+        <li><button type="button" onclick="pl.v.destroy.setupUserInterface()">D</button></li>
+      </ul>
+    </nav>
+  </div>
+ </header>
+ <main>
+  <div class="wrapper clearfix">
+<!-- ======================================================= -->
+  <section id="Book-M" class="UI-Page">
+<!-- ======================================================= -->
+    <p>This app, which is accompanied by a
+      <a href="http://web-engineering.info/tech/cLASSjs/validation-tutorial.html">tutorial</a>, is the
+      2nd example app of our incremental sequence of six examples of
+      <a href="http://web-engineering.info/cLASSjs">cLASSjs Front-End Web Apps</a>.</p>
+    <h1>Manage book data</h1>
+    <div class="two-col-menu">
+      <menu>
+        <li><button type="button" onclick="pl.v.retrieveAndListAll.setupUserInterface()">Retrieve and list all book records</button></li>
+        <li><button type="button" onclick="pl.v.create.setupUserInterface()">Create a new book record</button></li>
+        <li><button type="button" onclick="pl.v.update.setupUserInterface()">Update a book record</button></li>
+        <li><button type="button" onclick="pl.v.destroy.setupUserInterface()">Delete a book record</button></li>
+      </menu>
+      <menu>
+        <li><button type="button" onclick="pl.c.app.createTestData()">Generate test data</button></li>
+        <li><button type="button" onclick="pl.c.storageManager.clearData( Book)">Clear database</button></li>
+      </menu>
+    </div>
+    <div class="button"><a href="index.html">Back to Main menu</a></div>
+  </section>
+<!-- ======================================================= -->
+  <section id="Book-R" class="UI-Page">
+<!-- ======================================================= -->
+    <h1>Retrieve and list all books</h1>
+    <table>
+      <thead><tr><th>ISBN</th><th>Title</th><th>Year</th><th>Authors</th><th>Publisher</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <div class="button">
+      <button type="button" onclick="pl.v.manage.refreshUI()">Back to menu</button>
+    </div>
+  </section>
+<!-- ======================================================= -->
+  <section id="Book-C" class="UI-Page">
+<!-- ======================================================= -->
+    <h1>Create a new book record</h1>
+    <form>
+      <div class="field">
+        <label>ISBN: <input type="text" name="isbn" /></label>
+      </div>
+      <div class="field">
+        <label>Title: <input type="text" name="title" /></label>
+      </div>
+      <div class="field">
+        <label>Year: <input type="text" name="year" /></label>
+      </div>
+      <div class="select-one">
+        <label>Publisher: <select name="selectPublisher"></select></label>
+      </div>
+      <div class="select-many">
+        <label>Authors: 
+          <select name="selectAuthors" multiple="multiple"></select>
+        </label>
+      </div>
+      <div class="button-group">
+        <button type="submit" name="commit">Save</button>
+        <button type="button" onclick="pl.v.manage.refreshUI()">Back to menu</button>
+      </div>
+    </form>
+  </section>
+<!-- ======================================================= -->
+  <section id="Book-U" class="UI-Page">
+<!-- ======================================================= -->
+    <h1>Update a book record</h1>
+    <form>
+      <div class="select-one">
+        <label>Select book: <select name="selectBook"></select></label>
+      </div>
+      <div class="field">
+        <label>ISBN: <output name="isbn"></output></label>
+      </div>
+      <div class="field">
+        <label>Title: <input type="text" name="title" /></label>
+      </div>
+      <div class="field">
+        <label>Year: <input type="text" name="year" /></label>
+      </div>
+      <div class="select-one">
+        <label>Publisher: <select name="selectPublisher"></select></label>
+      </div>
+      <div class="widget">
+        <label>Authors: <div class="MultiChoiceWidget"></div></label>
+      </div>
+      <div class="button-group">
+        <button type="submit" name="commit" disabled="disabled">Save</button>
+        <button type="button" onclick="pl.v.manage.refreshUI()">Back to menu</button>
+      </div>
+    </form>
+  </section>
+<!-- ======================================================= -->
+  <section id="Book-D" class="UI-Page">
+<!-- ======================================================= -->
+    <h1>Delete a book record</h1>
+    <form id="deleteBookForm">
+      <div class="select-one">
+        <label>Select book: <select name="selectBook"></select></label>
+      </div>
+      <div class="button-group">
+        <button type="submit" name="commit">Delete</button>
+        <button type="button" onclick="pl.v.manage.refreshUI()">Back to menu</button>
+      </div>
+    </form>
+  </section>
+  </div>
+</main>
+<footer>
+  <div class="foot-content wrapper">
+    Copyright © 2015-2017 Gerd Wagner,
+    <a rel="license" href="http://www.codeproject.com/info/cpol10.aspx">The Code Project Open License (CPOL)</a>.
+  </div>
+</footer>
+</body>
+</html>

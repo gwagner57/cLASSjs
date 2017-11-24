@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>cLASSjs Validation App</title>
+  <link rel="stylesheet" href="../../css/normalize.min.css" />
+  <link rel="stylesheet" href="../../css/app-main.css" />
+
+  <!--
+    <script src="../../dist/cLASSjsBrowserLib.js"></script>
+  -->
+  <!-- cLASSjsBrowserLib.js contains the following  -->
+  <script src="../../lib/browserShims.js"></script>
+  <script src="../../lib/util.js"></script>
+  <script src="../../lib/dom.js"></script>
+  <script src="../../lib/errorTypes.js"></script>
+  <script src="../../lib/xhr.js"></script>
+  <script src="../../src/eNUMERATION.js"></script>
+  <script src="../../src/cLASS.js"></script>
+  <script src="../../src/oBJECTvIEW.js"></script>
+  <script src="../../src/storage/sTORAGEmANAGER.js"></script>
+
+  <script src="src/c/initialize.js"></script>
+  <script src="src/m/Book.js"></script>
+  <script src="src/v/retrieveAndListAllBooks.js"></script>
+  <script src="src/c/retrieveAndListAllBooks.js"></script>
+  
+  <script>
+   window.addEventListener("load", pl.c.retrieveAndListAllBooks.initialize);
+  </script>
+</head>
+<body>
+  <header>
+    <div class="wrapper clearfix">
+      <div class="title">
+        <h1>Public Library: Retrieve and List All Book Records</h1>
+      </div>
+      <nav>
+        <ul>
+          <li><a href="createBook.html">C</a></li>
+          <li><a href="retrieveAndListAllBooks.html">R</a></li>
+          <li><a href="updateBook.html">U</a></li>
+          <li><a href="deleteBook.html">D</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+  <main>
+    <div class="wrapper clearfix">
+      <table id="books">
+        <thead>
+        <tr><th>ISBN</th><th>Title</th><th>Year</th><th>Edition</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </main>
+  <footer>
+    <div class="foot-content wrapper">
+      <a href="index.html">Back to main menu</a>
+    </div>
+  </footer>
+</body>
+</html>
