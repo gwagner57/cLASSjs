@@ -6,9 +6,52 @@
  * @license The MIT License (MIT)
  */
 sTORAGEmANAGER.adapters["IndexedDB"] = {
+  idbConnection: new JsStore.Instance(),
+  //------------------------------------------------
+  createDbConnection: function (dbName, modelClasses, continueProc) {
+  //------------------------------------------------
+    var jsStoreTableSchemas = null;
+    var idbCon = sTORAGEmANAGER.adapters["IndexedDB"].idbConnection;
+    JsStore.isDbExist( dbName).then( function (exists) {
+      if (exists) idbCon.openDb( dbName);
+      else {
+        jsStoreTableSchemas = modelClasses.map( function (mc) {
+          var jsStoreColDefs=[];
+          // convert cLASS property declarations to JsStore column definitions
+          Object.keys( mc.properties).forEach( function (prop) {
+            var range = mc.properties[prop].range,
+                jsDataType = cLASS.rangeToJsDataType( range),
+                colDef = {Name: prop, DataType: jsDataType};
+            if (prop === "id") colDef.PrimaryKey = true;
+            if (!mc.properties[prop].optional) colDef.NotNull = true;
+            jsStoreColDefs.push( colDef);
+          });
+          return {Name: mc.Name, Columns: jsStoreColDefs};
+        });
+        idbCon.createDb( {Name: dbName, Tables: jsStoreTableSchemas});
+      }
+    })
+    .catch( function (err) {console.log( err.Message);});
+  },
+  //------------------------------------------------
+  add: function (mc, slots, newObj, continueProcessing) {
+  //------------------------------------------------
+    var tableName = util.class2TableName( mc.name);
+    pl.c.storageManager.idbCon.insert({
+      Into: tableName,
+      Values: [slots],
+      OnSuccess: function (nmrOfRowsInserted){
+        console.log( nmrOfRowsInserted +" record(s) added!");
+      },
+      OnError: function (error) {
+        console.log( error.value);
+      }
+    });
+
+  },
   //------------------------------------------------
   retrieve: function (mc, id, continueProcessing) {
-  //------------------------------------------------
+    //------------------------------------------------
     //this.retrieveAll();             //TODO: Needed?
     continueProcessing( mc.instances[id]);
   },
@@ -42,14 +85,6 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
     }
     retrieveAll( mClass);
     continueProcessing();
-  },
-  //------------------------------------------------
-  add: function (mc, slots, newObj, continueProcessing) {
-  //------------------------------------------------
-    mc.instances[newObj.id] = newObj;
-    this.saveAll( mc);
-    //console.log( newObj.toString() + " created!");
-    continueProcessing( newObj, null);  // no error
   },
   //------------------------------------------------
   /***** newObj includes validated update slots *****/

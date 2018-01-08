@@ -208,7 +208,10 @@ RoleConstraintViolation.prototype.constructor = RoleConstraintViolation;
  * @license The MIT License (MIT)
  ******************************************************************************/
 var util = {};  //typeof util === undefined ? {} : util;
-
+util.nextYear = function () {
+  var date = new Date();
+  return (date.getFullYear() + 1);
+};
 /**
  * Serialize a Date object as an ISO date string
  * @return  YYYY-MM-DD

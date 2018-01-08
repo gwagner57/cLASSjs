@@ -689,6 +689,47 @@ cLASS.isIntegerType = function (T) {
   * @author Gerd Wagner
   * @return {boolean}
   */
+ cLASS.rangeToJsDataType = function ( range) {
+   var jsDataType="";
+   switch (range) {
+     case "String":
+     case "NonEmptyString":
+     case "Email":
+     case "URL":
+     case "PhoneNumber":
+     case "Date":
+       jsDataType = "string";
+       break;
+     case "Integer":
+     case "NonNegativeInteger":
+     case "PositiveInteger":
+     case "Number":
+     case "Decimal":
+     case "Percent":
+     case "ClosedUnitInterval":
+     case "OpenUnitInterval":
+       jsDataType = "number";
+       break;
+     case "Boolean":
+       jsDataType = "boolean";
+       break;
+     default:
+       if (range instanceof eNUMERATION) {
+         jsDataType = "number";
+       } else if (typeof range === "string" && cLASS[range]) {
+         jsDataType = "string";  // for the standard ID (TODO: can also be "number")
+       } else if (typeof range === "object") {  // a.g. Array or Object
+         jsDataType = "object";
+       }
+   }
+   return jsDataType;
+ };
+ /**
+  * Check if a value is of some type.
+  * @method
+  * @author Gerd Wagner
+  * @return {boolean}
+  */
  cLASS.isOfType = function ( v, Type) {
    switch (Type) {
      case "String": return (typeof v === "string");

@@ -17,6 +17,7 @@
   <link rel="stylesheet" href="../../css/normalize.min.css" />
   <link rel="stylesheet" href="../../css/app-main.css" />
 
+  <script src="../../lib/JsStore-1.2.7.min.js "></script>
   <!--
     <script src="../../dist/cLASSjsBrowserLib.js"></script>
   -->
@@ -31,14 +32,17 @@
   <script src="../../src/oBJECTvIEW.js"></script>
   <script src="../../src/storage/sTORAGEmANAGER.js"></script>
 
-  <script src="src/c/initialize.js"></script>
+  <script src="../../src/storage/sTORAGEmANAGER_IndexedDB.js"></script>
+  <script src="src/c/app.js"></script>
+  <script src="src/v/books.js"></script>
+  <script src="src/c/books.js"></script>
   <script src="src/m/Book.js"></script>
   <script>
-    window.addEventListener("load", pl.c.books.manage.initialize);
+    window.addEventListener("load", pl.c.app.initialize);
   </script>
 </head>
 <body>
- <header>
+<header>
   <div class="wrapper clearfix">
     <div class="title">
       <figure><a href="https://plus.google.com/u/0/b/104237216582874489152/104237216582874489152/about">
@@ -46,127 +50,118 @@
              src="safari-pinned-tab.svg" /></a></figure>
       <h1>Public Library</h1>
       <h2>Constraint Validation with cLASSjs</h2>
-      <h3>An example of a JavaScript front-end app with constraint validation built
-        with the <a href="https://bitbucket.org/gwagner57/ontojs">cLASSjs</a> library
-        supporting model-based development</h3>
+      <h3>A JavaScript front-end app with constraint validation built
+        with the <a href="https://bitbucket.org/gwagner57/ontojs">cLASSjs</a> library</h3>
     </div>
-    <nav>
+    <nav class="secondary">
       <ul>
-        <li><button type="button" onclick="pl.v.create.setupUserInterface()">C</button></li>
-        <li><button type="button" onclick="pl.v.retrieveAndListAll.setupUserInterface()">R</button></li>
-        <li><button type="button" onclick="pl.v.update.setupUserInterface()">U</button></li>
-        <li><button type="button" onclick="pl.v.destroy.setupUserInterface()">D</button></li>
+        <li><button type="button" onclick="pl.v.books.create.setupUserInterface()">C</button></li>
+        <li><button type="button" onclick="pl.v.books.retrieveAndListAll.setupUserInterface()">R</button></li>
+        <li><button type="button" onclick="pl.v.books.update.setupUserInterface()">U</button></li>
+        <li><button type="button" onclick="pl.v.books.destroy.setupUserInterface()">D</button></li>
       </ul>
     </nav>
   </div>
- </header>
- <main>
+</header>
+<main>
   <div class="wrapper clearfix">
-<!-- ======================================================= -->
-  <section id="Book-M" class="UI-Page">
-<!-- ======================================================= -->
-    <p>This app, which is accompanied by a
-      <a href="http://web-engineering.info/tech/cLASSjs/validation-tutorial.html">tutorial</a>, is the
-      2nd example app of our incremental sequence of six examples of
-      <a href="http://web-engineering.info/cLASSjs">cLASSjs Front-End Web Apps</a>.</p>
-    <h1>Manage book data</h1>
-    <div class="two-col-menu">
-      <menu>
-        <li><button type="button" onclick="pl.v.retrieveAndListAll.setupUserInterface()">Retrieve and list all book records</button></li>
-        <li><button type="button" onclick="pl.v.create.setupUserInterface()">Create a new book record</button></li>
-        <li><button type="button" onclick="pl.v.update.setupUserInterface()">Update a book record</button></li>
-        <li><button type="button" onclick="pl.v.destroy.setupUserInterface()">Delete a book record</button></li>
-      </menu>
-      <menu>
-        <li><button type="button" onclick="pl.c.app.createTestData()">Generate test data</button></li>
-        <li><button type="button" onclick="pl.c.storageManager.clearData( Book)">Clear database</button></li>
-      </menu>
-    </div>
-    <div class="button"><a href="index.html">Back to Main menu</a></div>
-  </section>
-<!-- ======================================================= -->
-  <section id="Book-R" class="UI-Page">
-<!-- ======================================================= -->
-    <h1>Retrieve and list all books</h1>
-    <table>
-      <thead><tr><th>ISBN</th><th>Title</th><th>Year</th><th>Authors</th><th>Publisher</th></tr></thead>
-      <tbody></tbody>
-    </table>
-    <div class="button">
-      <button type="button" onclick="pl.v.manage.refreshUI()">Back to menu</button>
-    </div>
-  </section>
-<!-- ======================================================= -->
-  <section id="Book-C" class="UI-Page">
-<!-- ======================================================= -->
-    <h1>Create a new book record</h1>
-    <form>
-      <div class="field">
-        <label>ISBN: <input type="text" name="isbn" /></label>
+    <!-- ======================================================= -->
+    <section id="Book-M" class="UI-Page">
+      <!-- ======================================================= -->
+      <p>This app, which is accompanied by a
+        <a href="http://web-engineering.info/tech/cLASSjs/validation-tutorial.html">tutorial</a>, is the
+        2nd example app of our incremental sequence of six examples of
+        <a href="http://web-engineering.info/cLASSjs">cLASSjs Front-End Web Apps</a>.</p>
+      <h1>Manage book data</h1>
+      <nav class="two-col-menu">
+        <ul>
+          <li><button type="button" onclick="pl.v.books.retrieveAndListAll.setupUserInterface()">Retrieve</button> and list all book records</li>
+          <li><button type="button" onclick="pl.v.books.create.setupUserInterface()">Create</button> a new book record</li>
+          <li><button type="button" onclick="pl.v.books.update.setupUserInterface()">Update</button> a book record</li>
+          <li><button type="button" onclick="pl.v.books.destroy.setupUserInterface()">Delete</button> a book record</li>
+        </ul>
+        <ul>
+          <li><button type="button" onclick="pl.c.app.createTestData()">Generate</button> test data</li>
+          <li><button type="button" onclick="pl.c.storageManager.clearData( Book)">Clear</button> database</li>
+        </ul>
+      </nav>
+      <div class="button"><a href="index.html">Back to Main menu</a></div>
+    </section>
+    <!-- ======================================================= -->
+    <section id="Book-R" class="UI-Page">
+      <!-- ======================================================= -->
+      <h1>Retrieve and list all books</h1>
+      <table>
+        <thead><tr><th>ISBN</th><th>Title</th><th>Year</th><th>Edition</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="button">
+        <button type="button" onclick="pl.v.books.manage.refreshUI()">Back to menu</button>
       </div>
-      <div class="field">
-        <label>Title: <input type="text" name="title" /></label>
-      </div>
-      <div class="field">
-        <label>Year: <input type="text" name="year" /></label>
-      </div>
-      <div class="select-one">
-        <label>Publisher: <select name="selectPublisher"></select></label>
-      </div>
-      <div class="select-many">
-        <label>Authors: 
-          <select name="selectAuthors" multiple="multiple"></select>
-        </label>
-      </div>
-      <div class="button-group">
-        <button type="submit" name="commit">Save</button>
-        <button type="button" onclick="pl.v.manage.refreshUI()">Back to menu</button>
-      </div>
-    </form>
-  </section>
-<!-- ======================================================= -->
-  <section id="Book-U" class="UI-Page">
-<!-- ======================================================= -->
-    <h1>Update a book record</h1>
-    <form>
-      <div class="select-one">
-        <label>Select book: <select name="selectBook"></select></label>
-      </div>
-      <div class="field">
-        <label>ISBN: <output name="isbn"></output></label>
-      </div>
-      <div class="field">
-        <label>Title: <input type="text" name="title" /></label>
-      </div>
-      <div class="field">
-        <label>Year: <input type="text" name="year" /></label>
-      </div>
-      <div class="select-one">
-        <label>Publisher: <select name="selectPublisher"></select></label>
-      </div>
-      <div class="widget">
-        <label>Authors: <div class="MultiChoiceWidget"></div></label>
-      </div>
-      <div class="button-group">
-        <button type="submit" name="commit" disabled="disabled">Save</button>
-        <button type="button" onclick="pl.v.manage.refreshUI()">Back to menu</button>
-      </div>
-    </form>
-  </section>
-<!-- ======================================================= -->
-  <section id="Book-D" class="UI-Page">
-<!-- ======================================================= -->
-    <h1>Delete a book record</h1>
-    <form id="deleteBookForm">
-      <div class="select-one">
-        <label>Select book: <select name="selectBook"></select></label>
-      </div>
-      <div class="button-group">
-        <button type="submit" name="commit">Delete</button>
-        <button type="button" onclick="pl.v.manage.refreshUI()">Back to menu</button>
-      </div>
-    </form>
-  </section>
+    </section>
+    <!-- ======================================================= -->
+    <section id="Book-C" class="UI-Page">
+      <!-- ======================================================= -->
+      <h1>Create a new book record</h1>
+      <form>
+        <div class="I-O-field">
+          <label>ISBN: <input type="text" name="id" /></label>
+        </div>
+        <div class="I-O-field">
+          <label>Title: <input type="text" name="title" /></label>
+        </div>
+        <div class="I-O-field">
+          <label>Year: <input type="text" name="year" /></label>
+        </div>
+        <div class="I-O-field">
+          <label>Edition: <input type="text" name="edition"/></label>
+        </div>
+        <div class="button-group">
+          <button type="submit" name="commit">Save</button>
+          <button type="button" onclick="pl.v.books.manage.refreshUI()">Back to menu</button>
+        </div>
+      </form>
+    </section>
+    <!-- ======================================================= -->
+    <section id="Book-U" class="UI-Page">
+      <!-- ======================================================= -->
+      <h1>Update a book record</h1>
+      <form>
+        <div class="select-one">
+          <label>Select book: <select name="selectBook"></select></label>
+        </div>
+        <div class="I-O-field">
+          <label>ISBN: <output name="id"></output></label>
+        </div>
+        <div class="I-O-field">
+          <label>Title: <input type="text" name="title" /></label>
+        </div>
+        <div class="I-O-field">
+          <label>Year: <input type="text" name="year" /></label>
+        </div>
+        <div class="I-O-field">
+          <label>Edition: <input type="text" name="edition"/></label>
+        </div>
+        <div class="button-group">
+          <button type="submit" name="commit" disabled="disabled">Save</button>
+          <button type="button" onclick="pl.v.books.manage.refreshUI()">Back to menu</button>
+        </div>
+      </form>
+    </section>
+    <!-- ======================================================= -->
+    <section id="Book-D" class="UI-Page">
+      <!-- ======================================================= -->
+      <h1>Delete a book record</h1>
+      <form id="deleteBookForm">
+        <div class="select-one">
+          <label>Select book: <select name="selectBook"></select></label>
+        </div>
+        <div class="button-group">
+          <button type="submit" name="commit">Delete</button>
+          <button type="button" onclick="pl.v.books.manage.refreshUI()">Back to menu</button>
+        </div>
+      </form>
+    </section>
   </div>
 </main>
 <footer>
