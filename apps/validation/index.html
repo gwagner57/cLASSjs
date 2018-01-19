@@ -1,5 +1,14 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en" vocab="http://schema.org/" typeof="WebApplication">
+<!-- ************************************************************
+ What's new compared to the Minimal App?
+ + add property constraints in Book.js
+ + add event listeners for validation on input in pl.v.books.create.setupUserInterface (in v/book.js)
+ + add constraint checking code in pl.v.books.create.handleSaveButtonClickEvent
+ + add event listeners for validation on input in pl.v.books.update.setupUserInterface (in v/book.js)
+ + add constraint checking code in pl.v.books.update.handleSaveButtonClickEvent
+ ************************************************************* -->
+
 <head>
   <meta charset="UTF-8" />
   <title>cLASSjs Validation App</title>
@@ -53,8 +62,7 @@
              src="safari-pinned-tab.svg" /></a></figure>
       <h1>Public Library</h1>
       <h2>Constraint Validation with cLASSjs</h2>
-      <h3>A JavaScript front-end app with constraint validation built
-        with the <a href="https://github.com/gwagner57/cLASSjs">cLASSjs</a> library</h3>
+      <h3>A <a href="https://github.com/gwagner57/cLASSjs">cLASSjs</a> front-end app with generic constraint validation</h3>
     </div>
     <nav class="secondary">
       <ul>
@@ -88,7 +96,7 @@
           <li><button type="button" onclick="pl.c.storageManager.clearDB()">Clear</button> database</li>
         </ul>
       </nav>
-      <div class="button"><a href="index.html">Back to Main menu</a></div>
+      <!-- <div class="button"><a href="index.html">Back to Main menu</a></div> -->
     </section>
     <!-- ======================================================= -->
     <section id="Book-R" class="UI-Page">
@@ -169,7 +177,7 @@
 </main>
 <footer>
   <div class="foot-content wrapper">
-    Copyright © 2015-2017 Gerd Wagner,
+    Copyright © 2017-2018 Gerd Wagner,
     <a rel="license" href="http://www.codeproject.com/info/cpol10.aspx">The Code Project Open License (CPOL)</a>.
   </div>
 </footer>
