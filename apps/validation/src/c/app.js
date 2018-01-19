@@ -9,12 +9,16 @@ var pl = {
     c: { books:{}}
 };
 pl.c.app = {
+  name: "PublicLibrary",
+  validateOnInput: false,
   initialize: function() {
-    pl.c.storageManager = new sTORAGEmANAGER({name:"IndexedDB"});
-    //pl.c.storageManager = new sTORAGEmANAGER();
-    pl.c.storageManager.createDbConnection("PublicLibrary", [Book],
-        pl.c.app.createTestData);
-        //pl.c.books.manage.initialize);
+    if (!('indexedDB' in window)) {
+      console.log("This browser doesn't support IndexedDB. Falling back to LocalStorage.");
+      pl.c.storageManager = new sTORAGEmANAGER();
+    } else {
+      pl.c.storageManager = new sTORAGEmANAGER({name:"IndexedDB"});
+    }
+    pl.c.storageManager.createEmptyDb().then( pl.c.books.manage.initialize);
   },
   createTestData: function () {
     pl.c.storageManager.add( Book, [

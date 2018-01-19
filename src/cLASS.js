@@ -13,7 +13,7 @@
  *   });
  *   var myObj = new MyObject({id: 1, myAdditionalAttribute: 7});
  *   // test if instance of MyObject
- *   if (myObj.constructor.Name ==="MyObject") ...
+ *   if (myObj. .Name ==="MyObject") ...
  *   // or, alternatively,
  *   if (myObj instanceof MyObject) ...
  *
@@ -237,23 +237,46 @@ function cLASS (classSlots) {
      * @param {?} val  The value to be converted.
      * @return {boolean}
      */
-    constr.prototype.convertPropValToString = function ( prop) {
+    constr.prototype.getValAsString = function ( prop) {
       // make sure the eNUMERATION meta-class object can be checked if available
       var eNUMERATION = typeof eNUMERATION === "undefined" ? undefined : eNUMERATION;
-      var range = this.constructor.properties[prop].range,
-          val = this[prop];
+      var propDecl = this.constructor.properties[prop],
+          range = propDecl.range, val = this[prop];
+      var valuesToConvert=[], displayStr="", k=0,
+          listSep = ", ";
       if (val === undefined || val === null) return "";
-      if (eNUMERATION && range instanceof eNUMERATION) return range.labels[val-1];
-      if (typeof val === "string") return val;
-      if (["number","boolean"].includes( typeof(val))) return String( val);
-      if (range === "Date") return util.createIsoDateString( val);
-      // show the value of a reference property as an ID reference
-      if (typeof range === "string" && cLASS[range]) {
-        if (typeof range === "object" && val.id !== undefined) return val.id;
-        else return "";
+      if (propDecl.maxCard && propDecl.maxCard > 1) {
+        if (Array.isArray( val)) {
+          valuesToConvert = val.slice(0);  // clone;
+        } else console.log("The value of a multi-valued " +
+            "datatype property must be an array!");
+      } else valuesToConvert = [val];
+      valuesToConvert.forEach( function (v,i) {
+        if (eNUMERATION && range instanceof eNUMERATION) {
+          valuesToConvert[i] = range.labels[v-1];
+        } else if (["number","string","boolean"].includes( typeof v) || !v) {
+          valuesToConvert[i] = String( v);
+        } else if (range === "Date") {
+          valuesToConvert[i] = util.createIsoDateString( v);
+        } else if (Array.isArray( v)) {  // JSON-compatible array
+          valuesToConvert[i] = v.slice(0);  // clone
+        } else if (typeof range === "string" && cLASS[range]) {
+          if (typeof val === "object" && val.id !== undefined) {
+            valuesToConvert[i] = val.id;
+          } else {
+            valuesToConvert[i] = "";
+          }
+        } else valuesToConvert[i] = JSON.stringify( v);
+      });
+      displayStr = valuesToConvert[0];
+      if (propDecl.maxCard && propDecl.maxCard > 1) {
+        displayStr = "[" + displayStr;
+        for (k=1; k < valuesToConvert.length; k++) {
+          displayStr += listSep + valuesToConvert[k];
+        }
+        displayStr = displayStr + "]";
       }
-      // else
-      return JSON.stringify( val);
+      return displayStr;
     };
     // define a concise serialization method for logging
     constr.prototype.toLogString = function () {

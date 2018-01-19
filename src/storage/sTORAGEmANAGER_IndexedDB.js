@@ -6,127 +6,138 @@
  * @license The MIT License (MIT)
  */
 sTORAGEmANAGER.adapters["IndexedDB"] = {
-  idbConnection: new JsStore.Instance(),
   //------------------------------------------------
-  createDbConnection: function (dbName, modelClasses, continueProc) {
+  createEmptyDb: function (dbName, modelClasses) {
   //------------------------------------------------
-    var jsStoreTableSchemas = null;
-    var idbCon = sTORAGEmANAGER.adapters["IndexedDB"].idbConnection;
-    JsStore.isDbExist( dbName).then( function (exists) {
-      if (exists) idbCon.openDb( dbName);
-      else {
-        jsStoreTableSchemas = modelClasses.map( function (mc) {
-          var jsStoreColDefs=[];
-          // convert cLASS property declarations to JsStore column definitions
-          Object.keys( mc.properties).forEach( function (prop) {
-            var range = mc.properties[prop].range,
-                jsDataType = cLASS.rangeToJsDataType( range),
-                colDef = {Name: prop, DataType: jsDataType};
-            if (prop === "id") colDef.PrimaryKey = true;
-            if (!mc.properties[prop].optional) colDef.NotNull = true;
-            jsStoreColDefs.push( colDef);
-          });
-          return {Name: mc.Name, Columns: jsStoreColDefs};
-        });
-        idbCon.createDb( {Name: dbName, Tables: jsStoreTableSchemas});
-      }
-    })
-    .catch( function (err) {console.log( err.Message);});
-  },
-  //------------------------------------------------
-  add: function (mc, slots, newObj, continueProcessing) {
-  //------------------------------------------------
-    var tableName = util.class2TableName( mc.name);
-    pl.c.storageManager.idbCon.insert({
-      Into: tableName,
-      Values: [slots],
-      OnSuccess: function (nmrOfRowsInserted){
-        console.log( nmrOfRowsInserted +" record(s) added!");
-      },
-      OnError: function (error) {
-        console.log( error.value);
-      }
+    return new Promise( function (resolve) {
+      idb.open( dbName, 1, function (upgradeDb) {
+        modelClasses.forEach( function (mc) {
+          var tableName = util.class2TableName( mc.Name);
+          if (!upgradeDb.objectStoreNames.contains( tableName)) {
+            upgradeDb.createObjectStore( tableName, {keyPath:"id"});
+            // possibly create autoIncrement standard ID attributes
+          }
+        })
+      }).then( resolve);
     });
-
   },
   //------------------------------------------------
-  retrieve: function (mc, id, continueProcessing) {
-    //------------------------------------------------
-    //this.retrieveAll();             //TODO: Needed?
-    continueProcessing( mc.instances[id]);
-  },
+  add: function (dbName, mc, records) {
   //------------------------------------------------
-  retrieveAll: function (mClass, continueProcessing) {
-  //------------------------------------------------
-    function retrieveAll (mc) {
-      var key = "", keys = [], i = 0,
-          tableString = "", table={},
-          tableName = util.class2TableName( mc.Name);
-      Object.keys( mc.properties).forEach( function (p) {
-        var range = mc.properties[p].range;
-        if (range instanceof cLASS) retrieveAll( range);
+    return new Promise( function (resolve, reject) {
+      var tableName = util.class2TableName( mc.Name);
+      idb.open( dbName).then( function (idbCx) {  // idbCx is a DB connection
+        var tx = idbCx.transaction( tableName, "readwrite");
+        var os = tx.objectStore( tableName);
+        if (!Array.isArray( records)) {  // single record insertion
+          records = [records];
+        }
+        // Promise.all takes a list of promises and resolves if all of them do
+        return Promise.all( records.map( function (rec) {return os.add( rec);}))
+            .then( function () {return tx.complete;});
+      }).then( resolve)
+      .catch( function (err) {
+        reject( err);
       });
-      try {
-        if (localStorage[tableName]) {
-          tableString = localStorage[tableName];
-        }
-      } catch (e) {
-        console.log( "Error when reading from Local Storage\n" + e);
-      }
-      if (tableString) {
-        table = JSON.parse( tableString);
-        keys = Object.keys( table);
-        console.log( keys.length + " " + mc.Name + " records loaded.");
-        for (i=0; i < keys.length; i++) {
-          key = keys[i];
-          mc.instances[key] = mc.convertRec2Obj( table[key]);
-        }
-      }
-    }
-    retrieveAll( mClass);
-    continueProcessing();
+    });
   },
   //------------------------------------------------
-  /***** newObj includes validated update slots *****/
-  update: function (mc, id, slots, newObj, continueProcessing) {
+  retrieve: function (dbName, mc, id) {
   //------------------------------------------------
-    this.saveAll( mc);  //TODO: save only on leaving page or closing browser tab/window
+    return new Promise( function (resolve) {
+      var tableName = util.class2TableName( mc.Name);
+      idb.open( dbName).then( function (idbCx) {  // idbCx is a DB connection
+        var tx = idbCx.transaction( tableName, "readonly");
+        var os = tx.objectStore( tableName);
+        return os.get( id);
+      }).catch( function (err) {
+        console.log( err);
+      }).then( function( result) {
+        if (result === undefined) result = null;
+        resolve( result);
+      });
+    });
   },
   //------------------------------------------------
-  destroy: function (mc, id, continueProcessing) {
+  retrieveAll: function (dbName, mc) {
   //------------------------------------------------
-    delete mc.instances[id];
-    this.saveAll( mc);  //TODO: save only on app exit
+    return new Promise( function (resolve) {
+      var tableName = util.class2TableName( mc.Name);
+      idb.open( dbName).then( function (idbCx) {  // idbCx is a DB connection
+        var tx = idbCx.transaction( tableName, "readonly");
+        var os = tx.objectStore( tableName);
+        return os.getAll();
+      }).catch( function (err) {
+        console.log( err);
+      }).then( function( results) {
+        if (results === undefined) results = [];
+        resolve( results);
+      });
+    });
   },
   //------------------------------------------------
-  clearData: function (mc, continueProcessing) {
-    //------------------------------------------------
-    var tableName = util.class2TableName( mc.Name);
-    mc.instances = {};
-    try {
-      localStorage[tableName] = JSON.stringify({});
-      console.log("Table "+ tableName +" cleared.");
-    } catch (e) {
-      console.log("Error when writing to Local Storage\n" + e);
-    }
+  update: function (dbName, mc, id, slots) {
+  //------------------------------------------------
+    return new Promise( function (resolve) {
+      var tableName = util.class2TableName( mc.Name);
+      idb.open( dbName).then( function (idbCx) {  // idbCx is a DB connection
+        var tx = idbCx.transaction( tableName, "readwrite");
+        var os = tx.objectStore( tableName);
+        slots["id"] = id;
+        os.put( slots);
+        return tx.complete;
+      }).catch( function (err) {
+        console.log( err);
+      }).then( resolve);
+    });
   },
   //------------------------------------------------
-  saveAll: function (mc) {
+  destroy: function (dbName, mc, id) {
   //------------------------------------------------
-    var id="", table={}, rec={}, obj=null, i=0,
-        keys = Object.keys( mc.instances),
-        tableName = util.class2TableName( mc.Name);
-    // convert to a 'table' as a map of entity records
-    for (i=0; i < keys.length; i++) {
-      id = keys[i];
-      obj = mc.instances[id];
-      table[id] = obj.toRecord();
-    }
-    try {
-      localStorage[tableName] = JSON.stringify( table);
-      console.log( keys.length +" "+ mc.Name +" records saved.");
-    } catch (e) {
-      console.log("Error when writing to Local Storage\n" + e);
-    }
+    return new Promise( function (resolve) {
+      var tableName = util.class2TableName( mc.Name);
+      idb.open( dbName).then( function (idbCx) {  // idbCx is a DB connection
+        var tx = idbCx.transaction( tableName, "readwrite");
+        var os = tx.objectStore( tableName);
+        os.delete( id);
+        return tx.complete;
+      }).catch( function (err) {
+        console.log( err);
+      }).then( resolve);
+    });
+  },
+  //------------------------------------------------
+  clearTable: function (dbName, mc) {
+  //------------------------------------------------
+    return new Promise( function (resolve) {
+      var tableName = util.class2TableName( mc.Name);
+      idb.open( dbName).then( function (idbCx) {  // idbCx is a DB connection
+        var tx = idbCx.transaction( tableName, "readwrite");
+        var os = tx.objectStore( tableName);
+        os.clear();
+        return tx.complete;
+      }).catch( function (err) {
+        console.log( err);
+      }).then( resolve);
+    });
+  },
+  //------------------------------------------------
+  clearDB: function (dbName) {
+  //------------------------------------------------
+    return new Promise( function (resolve) {
+      idb.open( dbName).then( function (idbCx) {  // idbCx is a DB connection
+        var tx = idbCx.transaction( idbCx.objectStoreNames, "readwrite");
+        // Promise.all takes a list of promises and resolves if all of them do
+        return Promise.all( Array.from( idbCx.objectStoreNames,
+            function (osName) {return tx.objectStore( osName).clear();}))
+            .then( function () {return tx.complete;});
+      }).catch( function (err) {
+        console.log( err);
+      }).then( resolve);
+    });
+  },
+  //------------------------------------------------
+  saveOnUnload: function (dbName) {  // not yet implemented
+  //------------------------------------------------
   }
 };

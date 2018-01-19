@@ -17,7 +17,10 @@
   <link rel="stylesheet" href="../../css/normalize.min.css" />
   <link rel="stylesheet" href="../../css/app-main.css" />
 
-  <script src="../../lib/JsStore-1.2.7.min.js "></script>
+  <!-- Load polyfills for supporting >=IE9 -->
+  <script src="https://cdn.polyfill.io/v2/polyfill.js?features=Array.from,Array.prototype.find,Array.prototype.includes,DOMTokenList,Element.prototype.after,Element.prototype.before,Element.prototype.classList,Element.prototype.cloneNode,Number.isInteger,Object.keys,Object.values,Promise,String.prototype.includes,console.log,&flags=gated" defer async></script>
+  <!-- Load the Promised IndexedDB library -->
+  <script src="../../lib/idb.js "></script>
   <!--
     <script src="../../dist/cLASSjsBrowserLib.js"></script>
   -->
@@ -51,14 +54,14 @@
       <h1>Public Library</h1>
       <h2>Constraint Validation with cLASSjs</h2>
       <h3>A JavaScript front-end app with constraint validation built
-        with the <a href="https://bitbucket.org/gwagner57/ontojs">cLASSjs</a> library</h3>
+        with the <a href="https://github.com/gwagner57/cLASSjs">cLASSjs</a> library</h3>
     </div>
     <nav class="secondary">
       <ul>
-        <li><button type="button" onclick="pl.v.books.create.setupUserInterface()">C</button></li>
-        <li><button type="button" onclick="pl.v.books.retrieveAndListAll.setupUserInterface()">R</button></li>
-        <li><button type="button" onclick="pl.v.books.update.setupUserInterface()">U</button></li>
-        <li><button type="button" onclick="pl.v.books.destroy.setupUserInterface()">D</button></li>
+        <li><button type="button" onclick="pl.v.books.create.setupUserInterface()" title="Create">C</button></li>
+        <li><button type="button" onclick="pl.v.books.retrieveAndListAll.setupUserInterface()" title="Retrieve">R</button></li>
+        <li><button type="button" onclick="pl.v.books.update.setupUserInterface()" title="Update">U</button></li>
+        <li><button type="button" onclick="pl.v.books.destroy.setupUserInterface()" title="Delete">D</button></li>
       </ul>
     </nav>
   </div>
@@ -82,7 +85,7 @@
         </ul>
         <ul>
           <li><button type="button" onclick="pl.c.app.createTestData()">Generate</button> test data</li>
-          <li><button type="button" onclick="pl.c.storageManager.clearData( Book)">Clear</button> database</li>
+          <li><button type="button" onclick="pl.c.storageManager.clearDB()">Clear</button> database</li>
         </ul>
       </nav>
       <div class="button"><a href="index.html">Back to Main menu</a></div>
@@ -128,7 +131,7 @@
       <h1>Update a book record</h1>
       <form>
         <div class="select-one">
-          <label>Select book: <select name="selectBook"></select></label>
+          <label>Select book: <select name="selectObj"></select></label>
         </div>
         <div class="I-O-field">
           <label>ISBN: <output name="id"></output></label>
@@ -154,7 +157,7 @@
       <h1>Delete a book record</h1>
       <form id="deleteBookForm">
         <div class="select-one">
-          <label>Select book: <select name="selectBook"></select></label>
+          <label>Select book: <select name="selectObj"></select></label>
         </div>
         <div class="button-group">
           <button type="submit" name="commit">Delete</button>
