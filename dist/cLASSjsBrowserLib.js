@@ -2626,10 +2626,13 @@ var xhr = {
  * @param storageAdapter: object
  */
 function sTORAGEmANAGER( storageAdapter) {
-  if (!storageAdapter) storageAdapter = {name:"LocalStorage"};
-  if (typeof( storageAdapter) === 'object' &&
-      storageAdapter.name !== undefined &&
-      ["LocalStorage","IndexedDB","MariaDB"].includes( storageAdapter.name)) {
+  if (typeof storageAdapter !== 'object' ||
+      typeof storageAdapter.name !== "string" ||
+      !(["LocalStorage","IndexedDB","MariaDB"].includes( storageAdapter.name))) {
+    throw new ConstraintViolation("Invalid storage adapter name!");
+  } else if (!storageAdapter.dbName) {
+    throw new ConstraintViolation("Storage adapter:missing DB name!");
+  } else {
     this.adapter = storageAdapter;
     // if "LocalStorage", create a main memory DB
     if (storageAdapter.name === "LocalStorage") {
@@ -2640,8 +2643,6 @@ function sTORAGEmANAGER( storageAdapter) {
         }
       });
     }
-  } else {
-    throw new ConstraintViolation("Invalid storageAdapter name");
   }
   // copy storage adapter to the corresponding adapter's storage management method library
   sTORAGEmANAGER.adapters[this.adapter.name].currentAdapter = storageAdapter;
@@ -2651,10 +2652,10 @@ function sTORAGEmANAGER( storageAdapter) {
  * @method
  */
 sTORAGEmANAGER.prototype.createEmptyDb = function () {
-  var adapterName = this.adapter.name;
+  var adapterName = this.adapter.name,
+      dbName = this.adapter.dbName;
   return new Promise( function (resolve) {
-    var dbName = pl.c.app.name,  // the DB name is set to the app name
-        modelClasses=[];
+    var modelClasses=[];
     Object.keys( cLASS).forEach( function (key) {
       // collect all non-abstract cLASSes
       if (cLASS[key].instances) modelClasses.push( cLASS[key]);
@@ -2670,11 +2671,12 @@ sTORAGEmANAGER.prototype.createEmptyDb = function () {
  * @param {object} records  The object creation slots
  */
 sTORAGEmANAGER.prototype.add = function (mClass, records) {
-  var adapterName = this.adapter.name;
+  var adapterName = this.adapter.name,
+      dbName = this.adapter.dbName;
   return new Promise( function (resolve) {
     var newObj=null, objID="";
     if (Array.isArray( records)) {  // bulk insertion
-      sTORAGEmANAGER.adapters[adapterName].add( pl.c.app.name, mClass, records)
+      sTORAGEmANAGER.adapters[adapterName].add( dbName, mClass, records)
       .then( function () {
         console.log( records.length +" "+ mClass.Name +"s added.");
         if (typeof resolve === "function") resolve();
@@ -2685,7 +2687,7 @@ sTORAGEmANAGER.prototype.add = function (mClass, records) {
         newObj = new mClass( records);  // check constraints
         objID = newObj.id;  // save object ID
         if (newObj) {
-          sTORAGEmANAGER.adapters[adapterName].add( pl.c.app.name, mClass, newObj)
+          sTORAGEmANAGER.adapters[adapterName].add( dbName, mClass, newObj)
           .then( function () {
             console.log( mClass.Name +" "+ objID +" added.");
             if (typeof resolve === "function") resolve();
@@ -2706,10 +2708,17 @@ sTORAGEmANAGER.prototype.add = function (mClass, records) {
  * @param {string|number} id  The object ID value
  */
 sTORAGEmANAGER.prototype.retrieve = function (mc, id) {
-  var adapterName = this.adapter.name;
+  var adapterName = this.adapter.name,
+      dbName = this.adapter.dbName;
   return new Promise( function (resolve) {
-    sTORAGEmANAGER.adapters[adapterName].retrieve( pl.c.app.name, mc, id)
-    .then( resolve);
+    sTORAGEmANAGER.adapters[adapterName].retrieve( dbName, mc, id)
+    .then( function (obj) {
+      if (!obj) {
+        obj = null;
+        console.log("There is no " + mc.Name + " with ID value " + id + " in the database!");
+      }
+      resolve( obj);
+    });
   });
 };
 /**
@@ -2720,9 +2729,10 @@ sTORAGEmANAGER.prototype.retrieve = function (mc, id) {
  * @param {object} mc  The model cLASS concerned
  */
 sTORAGEmANAGER.prototype.retrieveAll = function (mc) {
-  var adapterName = this.adapter.name;
+  var adapterName = this.adapter.name,
+      dbName = this.adapter.dbName;
   return new Promise( function (resolve) {
-    sTORAGEmANAGER.adapters[adapterName].retrieveAll( pl.c.app.name, mc)
+    sTORAGEmANAGER.adapters[adapterName].retrieveAll( dbName, mc)
     .then( resolve);
   });
 };
@@ -2734,16 +2744,16 @@ sTORAGEmANAGER.prototype.retrieveAll = function (mc) {
  * @param {object} slots  The object's update slots
  */
 sTORAGEmANAGER.prototype.update = function (mc, id, slots) {
-  var adapterN = this.adapter.name, currentSM = this;
+  var adapterName = this.adapter.name,
+      dbName = this.adapter.dbName, 
+      currentSM = this;
   return new Promise( function (resolve) {
     var objectBeforeUpdate = null, properties = mc.properties,
         updatedProperties=[], noConstraintViolated = true,
         updSlots = util.cloneObject( slots);
     // first check if object exists
     currentSM.retrieve( mc, id).then( function (objToUpdate) {
-      if (!objToUpdate) {
-        console.log( "There is no "+ mc.Name +" with ID value "+ id +" in the database!");
-      } else {
+      if (objToUpdate) {
         if (typeof objToUpdate === "object" && objToUpdate.constructor !== mc) {
           // if the retrieved objToUpdate is not of type mc, check integrity constraints
           objToUpdate = mc.convertRec2Obj( objToUpdate);
@@ -2789,7 +2799,7 @@ sTORAGEmANAGER.prototype.update = function (mc, id, slots) {
         }
         if (noConstraintViolated) {
           if (updatedProperties.length > 0) {
-            sTORAGEmANAGER.adapters[adapterN].update( pl.c.app.name, mc, id, slots, updSlots)
+            sTORAGEmANAGER.adapters[adapterName].update( dbName, mc, id, slots, updSlots)
             .then( function () {
               console.log("Properties "+ updatedProperties.toString() +
                   " of "+ mc.Name +" "+ id +" updated.");
@@ -2811,11 +2821,12 @@ sTORAGEmANAGER.prototype.update = function (mc, id, slots) {
  */
 sTORAGEmANAGER.prototype.destroy = function (mc, id) {
   var adapterName = this.adapter.name,
+      dbName = this.adapter.dbName,
       currentSM = this;
   return new Promise( function (resolve) {
     currentSM.retrieve( mc, id).then( function (record) {
       if (record) {
-        sTORAGEmANAGER.adapters[adapterName].destroy( pl.c.app.name, mc, id)
+        sTORAGEmANAGER.adapters[adapterName].destroy( dbName, mc, id)
         .then( function () {
           console.log( mc.Name +" "+ id +" deleted.");
           if (typeof resolve === "function") resolve();
@@ -2832,9 +2843,10 @@ sTORAGEmANAGER.prototype.destroy = function (mc, id) {
  * @method
  */
 sTORAGEmANAGER.prototype.clearTable = function (mc) {
-  var adapterName = this.adapter.name;
+  var adapterName = this.adapter.name,
+      dbName = this.adapter.dbName;
   return new Promise( function (resolve) {
-    sTORAGEmANAGER.adapters[adapterName].clearTable( pl.c.app.name, mc)
+    sTORAGEmANAGER.adapters[adapterName].clearTable( dbName, mc)
     .then( resolve);
   });
 };
@@ -2843,12 +2855,13 @@ sTORAGEmANAGER.prototype.clearTable = function (mc) {
  * @method
  */
 sTORAGEmANAGER.prototype.clearDB = function () {
-  var adapterName = this.adapter.name;
+  var adapterName = this.adapter.name,
+      dbName = this.adapter.dbName;
   return new Promise( function (resolve) {
     if ((typeof confirm === "function" &&
         confirm("Do you really want to delete all data?")) ||
         typeof confirm !== "function") {
-      sTORAGEmANAGER.adapters[adapterName].clearDB( pl.c.app.name)
+      sTORAGEmANAGER.adapters[adapterName].clearDB( dbName)
       .then( resolve);
     }
   });
@@ -2858,7 +2871,9 @@ sTORAGEmANAGER.prototype.clearDB = function () {
  * @method
  */
 sTORAGEmANAGER.prototype.saveOnUnload = function () {
-  sTORAGEmANAGER.adapters[this.adapter.name].saveOnUnload( pl.c.app.name);
+  var adapterName = this.adapter.name,
+      dbName = this.adapter.dbName;
+  sTORAGEmANAGER.adapters[adapterName].saveOnUnload( dbName);
 };
 
 sTORAGEmANAGER.adapters = {};

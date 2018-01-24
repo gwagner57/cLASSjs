@@ -137,7 +137,9 @@ function cLASS (classSlots) {
     });
   } else {  // if class is root class
     constr.properties = propDs;
+    /***************************************************/
     constr.prototype.set = function ( prop, val) {
+    /***************************************************/
       // this = object
       var constrViol = cLASS.check( prop, this.constructor.properties[prop], val);
       if (constrViol instanceof NoConstraintViolation) {
@@ -146,8 +148,10 @@ function cLASS (classSlots) {
         throw constrViol;
       }
     };
+    /***************************************************/
     // overwrite and improve the standard toString method
     constr.prototype.toString = function () {
+    /***************************************************/
       var str1="", str2="", i=0;
       if (this.name) str1 = this.name;
       else {
@@ -228,16 +232,10 @@ function cLASS (classSlots) {
       });
       return rec;
     };
-    /**
-     * Convert property value to form field value.
-     * @method
-     * @author Gerd Wagner
-     * @param {cLASS} Class  The domain of the property.
-     * @param {string} prop  The property name.
-     * @param {?} val  The value to be converted.
-     * @return {boolean}
-     */
-    constr.prototype.getValAsString = function ( prop) {
+    /***************************************************/
+    // Convert property value to (form field) string.
+    constr.prototype.getValueAsString = function ( prop) {
+    /***************************************************/
       // make sure the eNUMERATION meta-class object can be checked if available
       var eNUMERATION = typeof eNUMERATION === "undefined" ? undefined : eNUMERATION;
       var propDecl = this.constructor.properties[prop],
@@ -278,8 +276,10 @@ function cLASS (classSlots) {
       }
       return displayStr;
     };
-    // define a concise serialization method for logging
+    /***************************************************/
+    // A concise serialization method for logging
     constr.prototype.toLogString = function () {
+    /***************************************************/
       var str1="", str2="", i=0;
       var decimalPlaces = 2,
           roundFactor = Math.pow( 10, decimalPlaces);
@@ -318,13 +318,10 @@ function cLASS (classSlots) {
       if (str2 === "{ }") str2 = "";
       return str1 + str2;
     };
-    /**
-     * Generic method for converting rows/records to model objects
-     * @method
-     * @author Gerd Wagner
-     * @param {object} record  The record/row to be converted
-     */
-    constr.convertRec2Obj = function (record) {
+    /***************************************************/
+    // A class-level de-serialization method
+    constr.createObjectFromRecord = function (record) {
+    /***************************************************/
       var obj={};
       try {
         obj = new constr( record);

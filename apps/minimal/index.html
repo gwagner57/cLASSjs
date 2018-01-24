@@ -19,7 +19,7 @@
 
   <!-- Load polyfills for supporting >=IE9 -->
   <script src="https://cdn.polyfill.io/v2/polyfill.js?features=Array.from,Array.prototype.find,Array.prototype.includes,DOMTokenList,Element.prototype.after,Element.prototype.before,Element.prototype.classList,Element.prototype.cloneNode,Number.isInteger,Object.keys,Object.values,Promise,String.prototype.includes,console.log,&flags=gated" defer async></script>
-  <!-- Load the Promised IndexedDB library -->
+  <!-- Load the Promised IndexedDB library (see https://github.com/jakearchibald/idb) -->
   <script src="../../lib/idb.js "></script>
   <!--
     <script src="../../dist/cLASSjsBrowserLib.js"></script>
@@ -133,7 +133,7 @@
           <label>Select book: <select name="selectObj"></select></label>
         </div>
         <div class="I-O-field">
-          <label>ISBN: <output name="id"></output></label>
+          <label>ISBN: <output name="id"/></label>
         </div>
         <div class="I-O-field">
           <label>Title: <input type="text" name="title" /></label>

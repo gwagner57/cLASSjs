@@ -192,10 +192,10 @@ var oBJECTvIEW = function (slots) {
     // bottom-up data-binding: assign UI/form field
     if (uiEl.tagName === "INPUT" || uiEl.tagName === "OUTPUT") {
       if (!Array.isArray(v)) {
-        uiEl.value = cLASS.getValAsString( mo, f, v);
+        uiEl.value = cLASS.getValueAsString( mo, f, v);
       } else {
         v.forEach( function (el,i) {
-          var ds = cLASS.getValAsString( mo, f, el);
+          var ds = cLASS.getValueAsString( mo, f, el);
           if (i===0) uiEl.value = ds;
           else uiEl.value += fldGrpSep + ds;
         });
@@ -561,7 +561,7 @@ oBJECTvIEW.createClassPopulationWidget = function (Class, editableProperties) {
       if (columnProperties.includes( p)) {
         c = rowEl.insertCell();
         //c.textContent = cLASS.convertPropValToStr( Class, p, obj[p]);
-        c.textContent = obj.getValAsString( p);
+        c.textContent = obj.getValueAsString( p);
         // save value for being able to restore it
         c.setAttribute("data-oldVal", c.textContent);
         c.setAttribute("contenteditable","true");

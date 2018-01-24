@@ -12,12 +12,14 @@ pl.c.app = {
   name: "PublicLibrary",
   validateOnInput: false,
   initialize: function() {
+    var storageAdapter = {dbName: pl.c.app.name};  // the DB name is set to the app name
     if (!('indexedDB' in window)) {
       console.log("This browser doesn't support IndexedDB. Falling back to LocalStorage.");
-      pl.c.storageManager = new sTORAGEmANAGER();
+      storageAdapter.name = "LocalStorage";
     } else {
-      pl.c.storageManager = new sTORAGEmANAGER({name:"IndexedDB"});
+      storageAdapter.name = "IndexedDB";
     }
+    pl.c.storageManager = new sTORAGEmANAGER( storageAdapter);
     pl.c.storageManager.createEmptyDb().then( pl.c.books.manage.initialize);
   },
   createTestData: function () {

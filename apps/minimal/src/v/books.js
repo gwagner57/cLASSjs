@@ -44,10 +44,9 @@ pl.v.books.retrieveAndListAll = {
           }
           if (book) {
             row = tableBodyEl.insertRow(-1);
-            row.insertCell(-1).textContent = book.id;
-            row.insertCell(-1).textContent = book.title;
-            row.insertCell(-1).textContent = book.getValAsString("year");
-            if (book.edition) row.insertCell(-1).textContent = book.getValAsString("edition");
+            Object.keys( Book.properties).forEach( function (prop) {
+              row.insertCell(-1).textContent = book.getValueAsString( prop);
+            });
           }
         }
         pl.v.books.manage.refreshUI("R");
@@ -125,7 +124,6 @@ pl.v.books.update = {
   handleSaveButtonClickEvent: function () {
     var slots={}, formEl = document.querySelector("section#Book-U > form");
     Object.keys( Book.properties).forEach( function (prop) {
-      var propDecl = Book.properties[prop];
       if (prop === "id") return;
       slots[prop] = formEl[prop].value;
     });
