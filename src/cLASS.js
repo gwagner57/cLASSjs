@@ -42,7 +42,7 @@ function cLASS (classSlots) {
       }) ) {
     throw "No range defined for some property of class "+ classSlots.Name +" !";
   }
-  // define new class as constructor function
+  // define a constructor function represnting a new cLASS
   constr = function (instanceSlots) {
     if (supertypeName) {
       // invoke supertype constructor
@@ -343,7 +343,7 @@ function cLASS (classSlots) {
    if (!classSlots.isAbstract) {
      cLASS[classSlots.Name].instances = {};
    }
-  // return the class/constructor as the object constructed with new
+  // return the constructor as the object constructed with new cLASS
   return constr;
 }
  /**
