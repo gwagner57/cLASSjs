@@ -58,7 +58,7 @@ cLASSjs comes with a sTORAGEmANAGER class and two storage adapters for using `lo
 
 Since the IndexedDB technology is much more powerful, it is normally preferred for local data storage. However, older browsers (such as IE 9) may not support it. In this case we can easily fall back to LocalStorage in the followig way:
 
-    var storageAdapter = {dbName:"VocabularyTraining"},
+    var storageAdapter = {dbName:"Test"},
         storageManager = null;
     if (!("indexedDB" in window)) {
       console.log("This browser doesn't support IndexedDB. Falling back to LocalStorage.");
@@ -91,7 +91,7 @@ The constraints defined for a property in a model class can be checked on input/
     Object.keys( Book.properties).forEach( function (prop) {
       var propDecl = Book.properties[prop];
       formEl[prop].addEventListener("input", function () {
-        var errMsg = **cLASS.check**( prop, propDecl, formEl[prop].value).message;
+        var errMsg = <b>cLASS.check</b>( prop, propDecl, formEl[prop].value).message;
         formEl[prop].setCustomValidity( errMsg);
       });
     });
