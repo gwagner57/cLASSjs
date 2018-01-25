@@ -86,6 +86,7 @@ cLASSjs allows defining property constraints in a model class created with cLASS
 
 The constraints defined for a property in a model class can be checked on input/change and before submit in an HTML form and, in addition, before commit in the `add` and `update` methods of a storage manager, using the generic validation method `cLASS.check`, as shown in the follwoing example:
 
+<pre>
     var formEl = document.querySelector("#Book-Create > form");
     // loop over Book.properties add event listeners for validation on input
     Object.keys( Book.properties).forEach( function (prop) {
@@ -95,3 +96,4 @@ The constraints defined for a property in a model class can be checked on input/
         formEl[prop].setCustomValidity( errMsg);
       });
     });
+</pre>
