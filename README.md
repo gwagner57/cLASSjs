@@ -49,7 +49,7 @@ We loop over the enumeration `WeatherStateEL` with a `for` loop counting from 1 
 
 ## Use Case 2: Flexible Data Storage Management with Adapters
 
-cLASSjs comes with a sTORAGEmANAGER class and two storage adapters for using `localStorage` or ìndexedDB`. A storage manager works like a wrapper of the methods of an adapter. The storage manager methods invoke corresponding methods of its adapter. The following code example shows how to use a storage manager for invoking a data retrieval operation on a model class `Book`:
+cLASSjs comes with a sTORAGEmANAGER class and two storage adapters for using `localStorage` or `ìndexedDB`. A storage manager works like a wrapper of the methods of an adapter. The storage manager methods invoke corresponding methods of its adapter. The following code example shows how to use a storage manager for invoking a data retrieval operation on a model class `Book`:
 
     var storageAdapter = {name:"IndexedDB", dbName:"Test"};
     var storageManager = new sTORAGEmANAGER( storageAdapter);
