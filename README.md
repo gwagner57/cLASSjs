@@ -1,5 +1,10 @@
 # cLASSjs
-A JS library for defining (1) enumerations and (2) constructor-based classes (and class hierarchies) with semantic meta-data for generic data storage management, declarative constraint validation and for generating model-based user interfaces.
+A JS library for defining 
+
+1. enumerations;
+2. constructor-based classes (and class hierarchies) with semantic meta-data (e.g., for declarative constraint validation);
+3. storage adapters that facilitate switching from one storage technology (such as IndexedDB) to another one (such as MySQL);
+4. view models for model-based user interfaces.
 
 ## Use Case 1: Handling Enumerations and Enumeration Attributes
 
@@ -84,16 +89,16 @@ cLASSjs allows defining property constraints in a model class created with cLASS
       }
     });
 
-The constraints defined for a property in a model class can be checked on input/change and before submit in an HTML form and, in addition, before commit in the `add` and `update` methods of a storage manager, using the generic validation method `cLASS.check`, as shown in the follwoing example:
+The constraints defined for a property in a model class can be checked on input/change and before submit in an HTML form and, in addition, before commit in the `add` and `update` methods of a storage manager, using the generic validation method `cLASS.check`, as shown in the following example:
 
 <pre>
-    var formEl = document.querySelector("#Book-Create > form");
-    // loop over Book.properties add event listeners for validation on input
-    Object.keys( Book.properties).forEach( function (prop) {
-      var propDecl = Book.properties[prop];
-      formEl[prop].addEventListener("input", function () {
-        var errMsg = <b>cLASS.check</b>( prop, propDecl, formEl[prop].value).message;
-        formEl[prop].setCustomValidity( errMsg);
-      });
-    });
+var formEl = document.querySelector("#Book-Create > form");
+// loop over Book.properties and add event listeners for validation on input
+Object.keys( Book.properties).forEach( function (prop) {
+  var propDecl = Book.properties[prop];
+  formEl[prop].addEventListener("input", function () {
+	var errMsg = <b>cLASS.check</b>( prop, propDecl, formEl[prop].value).message;
+	formEl[prop].setCustomValidity( errMsg);
+  });
+});
 </pre>
