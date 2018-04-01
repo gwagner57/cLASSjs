@@ -277,9 +277,10 @@ function cLASS (classSlots) {
       return displayStr;
     };
     /***************************************************/
+/*
     // A concise serialization method for logging
     constr.prototype.toLogString = function () {
-    /***************************************************/
+    //***************************************************
       var str1="", str2="", i=0;
       var decimalPlaces = 2,
           roundFactor = Math.pow( 10, decimalPlaces);
@@ -318,6 +319,7 @@ function cLASS (classSlots) {
       if (str2 === "{ }") str2 = "";
       return str1 + str2;
     };
+*/
     /***************************************************/
     // A class-level de-serialization method
     constr.createObjectFromRecord = function (record) {
@@ -416,17 +418,16 @@ cLASS.isIntegerType = function (T) {
    }
    if (maxCard === 1) {  // single-valued property
      valuesToCheck = [val];
-   } else {  // multi-valued property
-     // can be array-valued or map-valued
+   } else {  // multi-valued properties can be array-valued or map-valued
      if (Array.isArray( val) ) {
        valuesToCheck = val;
-     } else if (typeof( val) === "string") {
-       valuesToCheck = val.split(",").map(function (el) {
-         return el.trim();
+     } else if (typeof range === "string" && cLASS[range]) {
+       valuesToCheck = Object.keys( val).map( function (id) {
+         return val[id];
        });
      } else {
        return new RangeConstraintViolation("Values for "+ fld +
-           " must be arrays!");
+           " must be arrays or maps!");
      }
    }
    // convert integer strings to integers
@@ -781,11 +782,6 @@ cLASS.isIntegerType = function (T) {
    this.optParams = optParams;
  };
  cLASS.Array = function (itemType, size, optParams) {
-  /*
-  if (constraints) {
-    return {dataType:"Array", itemType: itemType, size: size, constraints: constraints};
-  } else return {dataType:"Array", itemType: itemType, size: size};
-  */
   if (this instanceof cLASS.Array) {
     // called with new, so return an array object
     this.type = "Array";
@@ -837,19 +833,19 @@ cLASS.RingBuffer.prototype.nmrOfItems = function () {
   else if (this.first <= this.last) return this.last - this.first + 1;
   else return this.last + this.size - this.first + 1;
 };
- cLASS.RingBuffer.prototype.add = function (item) {
-   if (this.nmrOfItems() < this.size) {
-     this.last++;  // still filling the buffer
-   } else {  // buffer is full, move both pointers
-     this.first = (this.first+1) % this.size;
-     this.last = (this.last+1) % this.size;
-   }
-   this.buffer[this.last] = item;
- };
+cLASS.RingBuffer.prototype.add = function (item) {
+  if (this.nmrOfItems() < this.size) {
+   this.last++;  // still filling the buffer
+  } else {  // buffer is full, move both pointers
+   this.first = (this.first+1) % this.size;
+   this.last = (this.last+1) % this.size;
+  }
+  this.buffer[this.last] = item;
+};
 cLASS.RingBuffer.prototype.toString = function (n) {
   var i=0, str = "[", item, roundingFactor=1,
       N = this.nmrOfItems(),
-      outputLen = n ? Math.min( n, N): N;
+      outputLen = n ? Math.min( n, N) : N;
   if (N === 0) return " ";
   for (i=0; i < outputLen; i++) {
     item = this.buffer[(this.first+i) % this.size];
@@ -864,4 +860,14 @@ cLASS.RingBuffer.prototype.toString = function (n) {
     if (i < outputLen-1) str += ", ";
   }
   return str + "]";
+ };
+// Simple Moving Average (SMA)
+ cLASS.RingBuffer.prototype.getSMA = function (n) {
+   var N = this.nmrOfItems(), i=0, val=0, sum=0;
+   if (n) N = Math.min( n, N);
+   for (i=0; i < N; i++) {
+     val = this.buffer[(this.first+i) % this.size];
+     sum += val;
+   }
+   return sum / N;
  };
