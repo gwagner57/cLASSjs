@@ -277,7 +277,7 @@ oBJECTvIEW.prototype.render = function (parentEl) {
     dataBinding[fld] = fldEl;
     // render text input element
     fldEl.name = fld;
-    fldEl.value = mo[fld] || "";
+    fldEl.value = typeof mo[fld] === "object" ? JSON.stringify( mo[fld]) : mo[fld] || "";
     fldEl.size = 7;
     if (fields[fld].hint) lblEl.title = fields[fld].hint;
     lblEl.textContent = fields[fld].label;
@@ -666,7 +666,11 @@ oBJECTvIEW.createUiFromViewModel = function (viewModel) {
     fldEl.name = fld;
     if (typeof fDecl.fieldValue === "function") {
       fldEl.value = fDecl.fieldValue();
-    } else fldEl.value = fDecl.fieldValue || "";
+    } else if (typeof fDecl.fieldValue === "object") {
+      fldEl.value = JSON.stringify( fDecl.fieldValue);
+    } else {
+      fldEl.value = fDecl.fieldValue || "";
+    }
     fldEl.size = 7;
     if (fDecl.hint) lblEl.title = fDecl.hint;
     lblEl.textContent = fDecl.label;

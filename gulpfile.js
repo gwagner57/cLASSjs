@@ -22,26 +22,48 @@ const argv = require( "yargs").argv,
 // the folder where the distribution library file is created.
 const buildFolder = "dist";
 
+// the JS files of cLASSjsBrowserLib
+const cLASSjsBrowserLibFiles = [
+  "lib/browserShims.js",
+
+  "lib/errorTypes.js",
+  "lib/util.js",
+  "src/eNUMERATION.js",
+  "src/cLASS.js",
+
+  "lib/dom.js",
+  "src/oBJECTvIEW.js",
+
+  "lib/xhr.js",
+  "src/storage/sTORAGEmANAGER.js"
+];
+
+// the JS files of cLASSjsBrowserLib
+const cLASSjsWorkerLibFiles = [
+  "lib/browserShims.js",
+  "lib/errorTypes.js",
+  "lib/util.js",
+  "src/eNUMERATION.js",
+  "src/cLASS.js",
+  "lib/xhr.js",
+  "src/storage/sTORAGEmANAGER.js"
+];
+
 // build the cLASSjsBrowserLib.js file
 gulp.task( "build", function() {
-  return gulp.src([
-      "lib/browserShims.js",
-
-      "lib/errorTypes.js",
-      "lib/util.js",
-      "src/eNUMERATION.js",
-      "src/cLASS.js",
-
-      "lib/dom.js",
-      "src/oBJECTvIEW.js",
-
-      "lib/xhr.js",
-      "src/storage/sTORAGEmANAGER.js"
-	  ])
+  return gulp.src( cLASSjsBrowserLibFiles)
     .pipe( concat("cLASSjsBrowserLib.js"))
     .pipe( gulpif( argv.production, uglify()))
     .pipe( gulp.dest( buildFolder))
     .pipe( notify({message: "cLASSjsBrowserLib.js was built!"}));
+});
+// build the cLASSjsWorkerLib.js file
+gulp.task( "build-worker", function() {
+  return gulp.src( cLASSjsWorkerLibFiles)
+      .pipe( concat("cLASSjsWorkerLib.js"))
+      .pipe( gulpif( argv.production, uglify()))
+      .pipe( gulp.dest( buildFolder))
+      .pipe( notify({message: "cLASSjsWorkerLib.js was built!"}));
 });
 
 // build the cLASSjsNodeLib.js file
