@@ -585,7 +585,7 @@ function cLASS (classSlots) {
       }) ) {
     throw "No range defined for some property of class "+ classSlots.Name +" !";
   }
-  // define a constructor function represnting a new cLASS
+  // define a constructor function for creating a new cLASS
   constr = function (instanceSlots) {
     if (supertypeName) {
       // invoke supertype constructor
@@ -1747,8 +1747,7 @@ sTORAGEmANAGER.prototype.destroy = function (mc, id) {
           if (typeof resolve === "function") resolve();
         });
       } else {
-        err = "There is no "+ mc.Name +" with ID value "+ id +" in the database!";
-        console.log( err);
+        console.log("There is no "+ mc.Name +" with ID value "+ id +" in the database!");
       }
     });
   });

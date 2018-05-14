@@ -419,6 +419,33 @@ util.swapArrayElements = function (a,i,j) {
   a[i] = (typeof a[j] === "object") ? Object.assign( {}, a[j]) : a[j];
   a[j] = tempStore;
 };
+/**
+ * Shuffles array in place using the Fisher-Yates shuffle algorithm
+ * @param {Array} a - An array of items to be shuffled
+ */
+util.shuffleArray = function (a) {
+  var j, x, i;
+  for (i = a.length - 1; i > 0; i--) {
+    j = Math.floor( Math.random() * (i + 1) );
+    x = a[i];
+    a[i] = a[j];
+    a[j] = x;
+  }
+};
+/**
+ * Computes the Cartesian Product of an array of arrays
+ * From https://stackoverflow.com/a/36234242/2795909
+ * @param {Array} arr - An array of arrays of values to be combined
+ */
+util.cartesianProduct = function (arr) {
+  return arr.reduce( function (a,b) {
+    return a.map( function (x) {
+      return b.map( function (y) {
+        return x.concat(y);
+      })
+    }).reduce( function (a,b) {return a.concat(b)}, [])
+  }, [[]])
+};
 
 /**
  * Predefined class for creating enumerations as special JS objects.
@@ -558,7 +585,7 @@ function cLASS (classSlots) {
       }) ) {
     throw "No range defined for some property of class "+ classSlots.Name +" !";
   }
-  // define new class as constructor function
+  // define a constructor function for creating a new cLASS
   constr = function (instanceSlots) {
     if (supertypeName) {
       // invoke supertype constructor
@@ -653,7 +680,9 @@ function cLASS (classSlots) {
     });
   } else {  // if class is root class
     constr.properties = propDs;
+    /***************************************************/
     constr.prototype.set = function ( prop, val) {
+    /***************************************************/
       // this = object
       var constrViol = cLASS.check( prop, this.constructor.properties[prop], val);
       if (constrViol instanceof NoConstraintViolation) {
@@ -662,8 +691,10 @@ function cLASS (classSlots) {
         throw constrViol;
       }
     };
+    /***************************************************/
     // overwrite and improve the standard toString method
     constr.prototype.toString = function () {
+    /***************************************************/
       var str1="", str2="", i=0;
       if (this.name) str1 = this.name;
       else {
@@ -744,16 +775,10 @@ function cLASS (classSlots) {
       });
       return rec;
     };
-    /**
-     * Convert property value to form field value.
-     * @method
-     * @author Gerd Wagner
-     * @param {cLASS} Class  The domain of the property.
-     * @param {string} prop  The property name.
-     * @param {?} val  The value to be converted.
-     * @return {boolean}
-     */
-    constr.prototype.getValAsString = function ( prop) {
+    /***************************************************/
+    // Convert property value to (form field) string.
+    constr.prototype.getValueAsString = function ( prop) {
+    /***************************************************/
       // make sure the eNUMERATION meta-class object can be checked if available
       var eNUMERATION = typeof eNUMERATION === "undefined" ? undefined : eNUMERATION;
       var propDecl = this.constructor.properties[prop],
@@ -794,8 +819,11 @@ function cLASS (classSlots) {
       }
       return displayStr;
     };
-    // define a concise serialization method for logging
+    /***************************************************/
+/*
+    // A concise serialization method for logging
     constr.prototype.toLogString = function () {
+    //***************************************************
       var str1="", str2="", i=0;
       var decimalPlaces = 2,
           roundFactor = Math.pow( 10, decimalPlaces);
@@ -834,13 +862,11 @@ function cLASS (classSlots) {
       if (str2 === "{ }") str2 = "";
       return str1 + str2;
     };
-    /**
-     * Generic method for converting rows/records to model objects
-     * @method
-     * @author Gerd Wagner
-     * @param {object} record  The record/row to be converted
-     */
-    constr.convertRec2Obj = function (record) {
+*/
+    /***************************************************/
+    // A class-level de-serialization method
+    constr.createObjectFromRecord = function (record) {
+    /***************************************************/
       var obj={};
       try {
         obj = new constr( record);
@@ -862,7 +888,7 @@ function cLASS (classSlots) {
    if (!classSlots.isAbstract) {
      cLASS[classSlots.Name].instances = {};
    }
-  // return the class/constructor as the object constructed with new
+  // return the constructor as the object constructed with new cLASS
   return constr;
 }
  /**
@@ -935,17 +961,16 @@ cLASS.isIntegerType = function (T) {
    }
    if (maxCard === 1) {  // single-valued property
      valuesToCheck = [val];
-   } else {  // multi-valued property
-     // can be array-valued or map-valued
+   } else {  // multi-valued properties can be array-valued or map-valued
      if (Array.isArray( val) ) {
        valuesToCheck = val;
-     } else if (typeof( val) === "string") {
-       valuesToCheck = val.split(",").map(function (el) {
-         return el.trim();
+     } else if (typeof range === "string" && cLASS[range]) {
+       valuesToCheck = Object.keys( val).map( function (id) {
+         return val[id];
        });
      } else {
        return new RangeConstraintViolation("Values for "+ fld +
-           " must be arrays!");
+           " must be arrays or maps!");
      }
    }
    // convert integer strings to integers
@@ -1300,11 +1325,6 @@ cLASS.isIntegerType = function (T) {
    this.optParams = optParams;
  };
  cLASS.Array = function (itemType, size, optParams) {
-  /*
-  if (constraints) {
-    return {dataType:"Array", itemType: itemType, size: size, constraints: constraints};
-  } else return {dataType:"Array", itemType: itemType, size: size};
-  */
   if (this instanceof cLASS.Array) {
     // called with new, so return an array object
     this.type = "Array";
@@ -1356,19 +1376,19 @@ cLASS.RingBuffer.prototype.nmrOfItems = function () {
   else if (this.first <= this.last) return this.last - this.first + 1;
   else return this.last + this.size - this.first + 1;
 };
- cLASS.RingBuffer.prototype.add = function (item) {
-   if (this.nmrOfItems() < this.size) {
-     this.last++;  // still filling the buffer
-   } else {  // buffer is full, move both pointers
-     this.first = (this.first+1) % this.size;
-     this.last = (this.last+1) % this.size;
-   }
-   this.buffer[this.last] = item;
- };
+cLASS.RingBuffer.prototype.add = function (item) {
+  if (this.nmrOfItems() < this.size) {
+   this.last++;  // still filling the buffer
+  } else {  // buffer is full, move both pointers
+   this.first = (this.first+1) % this.size;
+   this.last = (this.last+1) % this.size;
+  }
+  this.buffer[this.last] = item;
+};
 cLASS.RingBuffer.prototype.toString = function (n) {
   var i=0, str = "[", item, roundingFactor=1,
       N = this.nmrOfItems(),
-      outputLen = n ? Math.min( n, N): N;
+      outputLen = n ? Math.min( n, N) : N;
   if (N === 0) return " ";
   for (i=0; i < outputLen; i++) {
     item = this.buffer[(this.first+i) % this.size];
@@ -1384,6 +1404,17 @@ cLASS.RingBuffer.prototype.toString = function (n) {
   }
   return str + "]";
  };
+// Simple Moving Average (SMA)
+ cLASS.RingBuffer.prototype.getSMA = function (n) {
+   var N = this.nmrOfItems(), i=0, val=0, sum=0;
+   if (n) N = Math.min( n, N);
+   for (i=0; i < N; i++) {
+     val = this.buffer[(this.first+i) % this.size];
+     sum += val;
+   }
+   return sum / N;
+ };
+
  /**
  * @fileOverview  A library of DOM element creation methods and 
  * other DOM manipulation methods.
@@ -1794,10 +1825,10 @@ var oBJECTvIEW = function (slots) {
     // bottom-up data-binding: assign UI/form field
     if (uiEl.tagName === "INPUT" || uiEl.tagName === "OUTPUT") {
       if (!Array.isArray(v)) {
-        uiEl.value = cLASS.getValAsString( mo, f, v);
+        uiEl.value = cLASS.getValueAsString( mo, f, v);
       } else {
         v.forEach( function (el,i) {
-          var ds = cLASS.getValAsString( mo, f, el);
+          var ds = cLASS.getValueAsString( mo, f, el);
           if (i===0) uiEl.value = ds;
           else uiEl.value += fldGrpSep + ds;
         });
@@ -1879,7 +1910,7 @@ oBJECTvIEW.prototype.render = function (parentEl) {
     dataBinding[fld] = fldEl;
     // render text input element
     fldEl.name = fld;
-    fldEl.value = mo[fld] || "";
+    fldEl.value = typeof mo[fld] === "object" ? JSON.stringify( mo[fld]) : mo[fld] || "";
     fldEl.size = 7;
     if (fields[fld].hint) lblEl.title = fields[fld].hint;
     lblEl.textContent = fields[fld].label;
@@ -2163,7 +2194,7 @@ oBJECTvIEW.createClassPopulationWidget = function (Class, editableProperties) {
       if (columnProperties.includes( p)) {
         c = rowEl.insertCell();
         //c.textContent = cLASS.convertPropValToStr( Class, p, obj[p]);
-        c.textContent = obj.getValAsString( p);
+        c.textContent = obj.getValueAsString( p);
         // save value for being able to restore it
         c.setAttribute("data-oldVal", c.textContent);
         c.setAttribute("contenteditable","true");
@@ -2268,7 +2299,11 @@ oBJECTvIEW.createUiFromViewModel = function (viewModel) {
     fldEl.name = fld;
     if (typeof fDecl.fieldValue === "function") {
       fldEl.value = fDecl.fieldValue();
-    } else fldEl.value = fDecl.fieldValue || "";
+    } else if (typeof fDecl.fieldValue === "object") {
+      fldEl.value = JSON.stringify( fDecl.fieldValue);
+    } else {
+      fldEl.value = fDecl.fieldValue || "";
+    }
     fldEl.size = 7;
     if (fDecl.hint) lblEl.title = fDecl.hint;
     lblEl.textContent = fDecl.label;
@@ -2756,7 +2791,7 @@ sTORAGEmANAGER.prototype.update = function (mc, id, slots) {
       if (objToUpdate) {
         if (typeof objToUpdate === "object" && objToUpdate.constructor !== mc) {
           // if the retrieved objToUpdate is not of type mc, check integrity constraints
-          objToUpdate = mc.convertRec2Obj( objToUpdate);
+          objToUpdate = mc.createObjectFromRecord( objToUpdate);
           if (!objToUpdate) return;  // constraint violation
         }
         objectBeforeUpdate = util.cloneObject( objToUpdate);
@@ -2832,8 +2867,7 @@ sTORAGEmANAGER.prototype.destroy = function (mc, id) {
           if (typeof resolve === "function") resolve();
         });
       } else {
-        err = "There is no "+ mc.Name +" with ID value "+ id +" in the database!";
-        console.log( err);
+        console.log("There is no "+ mc.Name +" with ID value "+ id +" in the database!");
       }
     });
   });
@@ -2937,7 +2971,7 @@ sTORAGEmANAGER.adapters["LocalStorage"] = {
       console.log( keys.length + " " + mc.Name + " records loaded.");
       for (i=0; i < keys.length; i++) {
         key = keys[i];
-        mc.instances[key] = mc.convertRec2Obj( table[key]);
+        mc.instances[key] = mc.createObjectFromRecord( table[key]);
       }
     }
   },

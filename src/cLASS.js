@@ -42,7 +42,7 @@ function cLASS (classSlots) {
       }) ) {
     throw "No range defined for some property of class "+ classSlots.Name +" !";
   }
-  // define a constructor function represnting a new cLASS
+  // define a constructor function for creating a new cLASS
   constr = function (instanceSlots) {
     if (supertypeName) {
       // invoke supertype constructor
