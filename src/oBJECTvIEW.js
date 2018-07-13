@@ -6,9 +6,9 @@
  * @license The MIT License (MIT)
  */
 /**
- * Class for creating UI/view models based on "model objects". A UI/view model
- * consists of fields (typically based on model properties) and user action
- * types, defined as named JS methods (with a self-explaining name) that can
+ * Class for creating (and rendering) view models based on "model objects". A view model
+ * is a (logical) UI model consisting of (input and output) fields, which are typically
+ * based on model properties, and user action types, defined as named JS methods that can
  * be used as event handlers for UI events.
  *
  * A view model may have a field order definition and field group definitions
@@ -19,17 +19,19 @@
  * argument, the view fields are generated from the labeled properties of the
  * underlying model object.
  *
- * Each model object o (such as "sim") may have a pre-defined view (like
- * "simView"), which is stored as the map entry oes.ui[o.objName+"View"].
+ * In addition to the field definition map "fields", there is a field value map
+ * "fieldValues", which has a top-down databinding to corresponding model object
+ * properties (via implicit setters). The underlying model object is associated
+ * with a view field via the record field "moName" of the corresponding "fields"
+ * definition record and the view's map "modelObjects".
  *
  * A view (or 'view model') is a logical representation of the interaction
  * elements of a UI, which typically correspond to properties and methods
  * of a model object. A view consists of (input/output) fields and of user
  * action types, such as "run", "saveSimulationState", etc.
  *
- * A view field has an I/O mode of either "I/O" (input/output) or "O".
- * When a view is rendered, view fields are rendered as UI elements in the
- * following way:
+ * A view field has an I/O mode of either "I/O" (input/output) or "O". When a view
+ * is rendered, its fields are rendered as HTML UI elements in the following way:
  *
  * 1) ordinary fields as form fields (HTML input/output elements),
  * 2) Boolean fields as HTML checkbox-typed input elements,
@@ -41,31 +43,30 @@
  * types are exposed in the form of HTML buttons or other actionable (e.g.
  * clickable) HTML elements.
  *
- * The DOM structure of a UI, and the values of its view-field-based elements/widgets,
- * are rendered by the view.render method at startup time. UI elements/widgets are
- * subsequently synchronized with view field values by means of a 2-way data binding
- * mechanism:
- * 1) Bottom-up: value changes of view fields are directly propagated to corresponding
- *    UI fields/widgets and vice versa.
- * 2) Top-down: value changes of UI fields are propagated to corresponding
- *    view fields and then to model object properties.
+ * A view's UI with its view-field-based input/output elements and widgets
+ * is rendered by invoking the ender method on the view. UI fields/widgets are
+ * subsequently synchronized with view field values and model object property values
+ * by means of a top-down data binding mechanism: value changes of UI fields are
+ * propagated to corresponding view fields (typically in a change event listener)
+ * and then to model object properties in the setter of the fields.<fld>.value property.
+ * TODO: implement this two-step data binding mechanism
  *
  * A user action type is a named JS function where the name indicates the
  * intended meaning of the user action (such as "saveSimulationState"). It
  * binds a UI event type, such as clicking on a button, to a view method as
  * its "event handler".
 
- * TODO: 1-way data binding from model object properties to view fields:
+ * TODO: bottom-up data binding from model object properties to view fields:
  * When a view field is bound to a model object property, its value is updated
  * whenever the corresponding property value of the model object is updated.
  *
- * View methods may be bound as handlers to an event type in a view.
+ * TODO: Support multiple model objects when using field definitions instead of names
  *
- * A view can be rendered in different ways:
- * 1) By creating all required DOM elements (form elements with controls), and
+ * A view can be rendered in two different ways:
+ * - (normally) By creating all required DOM elements (form elements with controls), and
  *    appending them to the child elements of the body element, if the document
  *    does not contain suitable form elements.
- * 2) By accessing existing form elements and controls, just setting/updating their
+ * - By accessing existing form elements and controls, just setting/updating their
  *    contents (and dynamic parts)
  *
  * Notice that slots.fields is an array of property names or view field definitions
@@ -73,7 +74,7 @@
  *
  * Example invocation:
 
- // create view based on a single model object
+ // create a view based on a single model object
  var view = new oBJECTvIEW({
       modelObject: sim.scenario,
 	  // create a horizontal field group
@@ -85,8 +86,8 @@
  // render the view and store its databinding
  view.dataBinding = view.render();
 
- // create view based on multiple model objects
- var dataBinding = new oBJECTvIEW({
+ // create a view based on multiple model objects
+ var view = new oBJECTvIEW({
      modelObjects: {"scenario":sim.scenario, "model":sim.model},
 	   // create a horizontal field group
      fields: [["scenario.simulationEndTime", "model.timeUnit", "scenario.stepDuration", ...]],
@@ -103,7 +104,7 @@
 /* globals oBJECTvIEW */
 var oBJECTvIEW = function (slots) {
   var properties={},
-  multipleModelObjects = slots.modelObjects && slots.modelObjects instanceof Object;
+      multipleModelObjects = slots.modelObjects && slots.modelObjects instanceof Object;
   // check oBJECTvIEW definition constraints
   if (!(slots.modelObject && (slots.modelObject instanceof Object)) &&
       !multipleModelObjects) {
@@ -111,7 +112,8 @@ var oBJECTvIEW = function (slots) {
   }
   if (multipleModelObjects) {
     if (!slots.fields) {
-      throw ViewConstraintViolation("A view def with multiple model objects requires field definitions!");
+      throw ViewConstraintViolation(
+          "A view def with multiple model objects requires field definitions!");
     }
     if (!slots.fields.every( function (fGrp) {
         // turn single field into singleton field group
@@ -123,12 +125,19 @@ var oBJECTvIEW = function (slots) {
           "need to be two-part strings with a dot as separator!");
     }
   }
-  if (multipleModelObjects) this.modelObjects = slots.modelObjects;
-  else this.modelObject = slots.modelObject;
+  if (multipleModelObjects) {
+    this.modelObjects = slots.modelObjects;
+  } else {
+    this.modelObject = slots.modelObject;
+    // store the modelObject also in the modelObjects map
+    this.modelObjects = {};
+    this.modelObjects[slots.modelObject.objectName] = slots.modelObject;
+  }
   this.heading = slots.heading;
   // Process the "slots.fields" array (or the properties map) into a "fields" map
   // of view field declarations and a field order definition array "fieldOrder"
   this.fields = {};
+  this.fieldValues = {};
   this.fieldOrder = [];
   if (slots.suppressNoValueFields === undefined) this.suppressNoValueFields = true;  // default
   else this.suppressNoValueFields = slots.suppressNoValueFields;
@@ -157,7 +166,7 @@ var oBJECTvIEW = function (slots) {
           if (this.suppressNoValueFields && mo[fld] === undefined) continue;
           // else
           this.fields[fld] = {
-            moName: moName,
+            moName: mo.objectName,
             label: properties[fld].label,
             hint: properties[fld].hint,
             range: properties[fld].range,
@@ -167,6 +176,7 @@ var oBJECTvIEW = function (slots) {
         } else if (typeof fld === "object") {  // field definition
           properties = this.modelObject.properties;
           this.fields[fld.name] = {
+            moName: this.modelObject.objectName,
             label: fld.label || properties[fld.name].label,
             hint: fld.hint || properties[fld.name].hint,
             range: fld.range || properties[fld.name].range,
@@ -213,7 +223,7 @@ var oBJECTvIEW = function (slots) {
    */
   this.methods.set = function (f,v) {
     var el=null, elems=null, i=0,
-        mo = this.modelObject,
+        mo = this.modelObjects[this.fields[f].moName],
         properties = mo.properties,
         fldGrpSep = this.fieldGroupSeparator,
         range = properties[f].range,
@@ -271,8 +281,8 @@ oBJECTvIEW.maxCardButtonGroup = 7;
 oBJECTvIEW.prototype.render = function (parentEl) {
   var fields = this.fields,  // fields map
       fieldOrder = this.fieldOrder,  // field order array
-      mo = this.modelObject,  // model object
-      modelObjects = this.modelObjects,  // model objects
+      mObject = this.modelObject,  // model object
+      mObjects = this.modelObjects,  // model objects
       // a map for storing the bindings of UI elems to view fields
       dataBinding = {},
       userActions = this.userActions,
@@ -310,14 +320,14 @@ oBJECTvIEW.prototype.render = function (parentEl) {
           fldEl.setCustomValidity( cLASS.check( fld, fDef, v).message);
         }
         // UI element to model property data binding (top-down)
-        if (fldEl.validity.valid) mo[fld] = v;
+        if (fldEl.validity.valid) mObjects[fDef.moName][fld] = v;
       });
     }
     // store data binding assignment of UI element to view field
     dataBinding[fld] = fldEl;
     // render text input element
     fldEl.name = fld;
-    fldEl.value = typeof mo[fld] === "object" ? JSON.stringify( mo[fld]) : mo[fld] || "";
+    fldEl.value = typeof mObject[fld] === "object" ? JSON.stringify( mObject[fld]) : mObject[fld] || "";
     fldEl.size = 7;
     if (fields[fld].hint) lblEl.title = fields[fld].hint;
     lblEl.textContent = fields[fld].label;
@@ -337,13 +347,13 @@ oBJECTvIEW.prototype.render = function (parentEl) {
       fldEl = document.createElement("input");
       fldEl.type = "checkbox";
       fldEl.addEventListener("change", function () {
-        mo[fld] = fldEl.checked;  // UI element to model property data binding
+        mObjects[fDef.moName][fld] = fldEl.checked;  // UI element to model property data binding
       });
     }
     // store data binding assignment of UI element to view field
     dataBinding[fld] = fldEl;
     fldEl.name = fld;
-    fldEl.checked = mo[fld];
+    fldEl.checked = mObject[fld];
     lblEl.textContent = fields[fld].label;
     if (fields[fld].hint) lblEl.title = fields[fld].hint;
     lblEl.appendChild( fldEl);
@@ -386,6 +396,7 @@ oBJECTvIEW.prototype.render = function (parentEl) {
       el.firstElementChild.addEventListener("click", function (e) {
         // UI element to model property data binding (top-down)
         var btnEl = e.target, i=0,
+            mo = mObjects[fields[fld].moName],
             val = parseInt( btnEl.value);
         if (btnType === "radio") {
           if (val !== mo[fld]) {
@@ -432,6 +443,7 @@ oBJECTvIEW.prototype.render = function (parentEl) {
     }
     dom.fillSelectWithOptionsFromArrayList( selEl, choiceItems);
     selEl.addEventListener("change", function () {
+      var mo = mObjects[fields[fld].moName];
       // UI element to model property data binding (top-down)
       if (selEl.value !== "") {
         if (oBJECTvIEW.isIntegerType( range)) {
@@ -460,7 +472,7 @@ oBJECTvIEW.prototype.render = function (parentEl) {
           isEnum = range instanceof eNUMERATION,
           isArr = Array.isArray( range);
       // retrieve model object for views based on multiple model objects
-      if (modelObjects) mo = modelObjects[fDef.moName];
+      if (mObjects) mObject = mObjects[fDef.moName];
       if (isEnum || isArr) {  // (ad-hoc) enumeration
         if (isEnum && range.MAX <= maxELforButton ||
             isArr && range.length <= maxELforButton) {
@@ -478,7 +490,7 @@ oBJECTvIEW.prototype.render = function (parentEl) {
         containerEl.appendChild( createLabeledTextField( fld));
       }
       if (fDef.dependsOn) {
-        if (mo[fDef.dependsOn]) containerEl.style.display = "block";
+        if (mObject[fDef.dependsOn]) containerEl.style.display = "block";
         else containerEl.style.display = "none";
         dataBinding[fDef.dependsOn].addEventListener("change", function () {
           // toggle CSS style.display of containerEl
@@ -665,7 +677,7 @@ oBJECTvIEW.createUiFromViewModel = function (viewModel) {
           Object.keys( outFields).concat( Object.keys( inFields)),
       fieldValues = viewModel.fieldValues,
       userActions = viewModel.userActions,
-      // a map for storing the bindings of DOM form elems to UI fields
+      // a map for storing the bindings of view fields to UI elems/widgets
       dataBinding = {},
       validateOnInput = viewModel.validateOnInput || true,
       fldGrpSep = viewModel.fieldGroupSeparator,
@@ -933,9 +945,9 @@ oBJECTvIEW.createUiFromViewModel = function (viewModel) {
     uiContainerEl.reset();
   }
   */
-  // create DOM elements for all UI/view fields
+  // create UI elements for all view fields
   createUiElemsForVmFields();
-  // create DOM elements (like buttons) for all user actions of the UI/view model
+  // create actionable UI elements (like buttons) for all user actions of the view model
   createUiElemsForUserActions( uiContainerEl);
   // store the view model's data binding (map field names to corresponding DOM elements)
   viewModel.dataBinding = dataBinding;
