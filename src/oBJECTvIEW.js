@@ -711,12 +711,11 @@ oBJECTvIEW.createUiFromViewModel = function (viewModel) {
         });
       }
       fldEl.addEventListener("change", function () {
-        var v = fldEl.value;
-        if (!validateOnInput) {
-          fldEl.setCustomValidity( cLASS.check( fld, fldDef, v).message);
-        }
+        var v = fldEl.value,
+            validationResult = cLASS.check( fld, fldDef, v);
+        if (!validateOnInput) fldEl.setCustomValidity( validationResult.message);
         // UI element to view model property data binding (top-down)
-        if (fldEl.validity.valid) fieldValues[fld] = v;
+        if (fldEl.validity.valid) fieldValues[fld] = validationResult.checkedValue;
       });
     }
     // store data binding assignment of UI element to view field
