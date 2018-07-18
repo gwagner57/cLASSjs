@@ -113,8 +113,11 @@ form :invalid {
 form > h1 {  /* form title */
   font-size: 120%;
 }
+form > div:first-child  {
+  margin-top: 0.5em;
+}
 form > div:not(:last-child)  {
-  margin-bottom: 0.2em;
+  margin-bottom: 0.5em;
 }
 form > div > label {
   position: relative;

@@ -665,18 +665,22 @@ oBJECTvIEW.createUiElemsForUserActions = function (userActions) {
 };
 /**
  * Render an HTML form based on a view model (an abstract UI definition)
+ *
+ * The viewModel.fieldValues map holds the name-value slots of fields that
+ * have been changed in the UI.
+ *
  * @author Gerd Wagner
  * @method
  */
 oBJECTvIEW.createUiFromViewModel = function (viewModel) {
-  var outFields = viewModel.outputFields,  // map of field definitions
-      inFields = viewModel.inputFields,  // map of field definitions
+  var outFields = viewModel.outputFields || {},  // map of field definitions
+      inFields = viewModel.inputFields || {},  // map of field definitions
       fields = {},
       // list of field names or field name lists
       fieldOrder = viewModel.fieldOrder ||
           Object.keys( outFields).concat( Object.keys( inFields)),
       fieldValues = viewModel.fieldValues,
-      userActions = viewModel.userActions,
+      userActions = viewModel.userActions || {},
       // a map for storing the bindings of view fields to UI elems/widgets
       dataBinding = {},
       validateOnInput = viewModel.validateOnInput || true,
@@ -691,25 +695,25 @@ oBJECTvIEW.createUiFromViewModel = function (viewModel) {
    */
   function createLabeledTextField( fld) {
     var fldEl = null, lblEl = document.createElement("label"),
-        fDecl = fields[fld];   // field declaration
-    if (fDecl.inputOutputMode === "O") {
+        fldDef = fields[fld];   // field declaration
+    if (fldDef.inputOutputMode === "O") {
       fldEl = document.createElement("output");
     } else {
       fldEl = document.createElement("input");
       fldEl.type = "text";
       if (validateOnInput) {
         fldEl.addEventListener("input", function () {
-          fldEl.setCustomValidity( cLASS.check( fld, fDecl, fldEl.value).message);
+          fldEl.setCustomValidity( cLASS.check( fld, fldDef, fldEl.value).message);
         });
       } else {
         fldEl.addEventListener("blur", function () {
-          fldEl.setCustomValidity( cLASS.check( fld, fDecl, fldEl.value).message);
+          fldEl.setCustomValidity( cLASS.check( fld, fldDef, fldEl.value).message);
         });
       }
       fldEl.addEventListener("change", function () {
         var v = fldEl.value;
         if (!validateOnInput) {
-          fldEl.setCustomValidity( cLASS.check( fld, fDecl, v).message);
+          fldEl.setCustomValidity( cLASS.check( fld, fldDef, v).message);
         }
         // UI element to view model property data binding (top-down)
         if (fldEl.validity.valid) fieldValues[fld] = v;
@@ -719,16 +723,16 @@ oBJECTvIEW.createUiFromViewModel = function (viewModel) {
     dataBinding[fld] = fldEl;
     // render text input element
     fldEl.name = fld;
-    if (typeof fDecl.fieldValue === "function") {
-      fldEl.value = fDecl.fieldValue();
-    } else if (typeof fDecl.fieldValue === "object") {
-      fldEl.value = JSON.stringify( fDecl.fieldValue);
+    if (typeof fldDef.fieldValue === "function") {
+      fldEl.value = fldDef.fieldValue();
+    } else if (typeof fldDef.fieldValue === "object") {
+      fldEl.value = JSON.stringify( fldDef.fieldValue);
     } else {
-      fldEl.value = fDecl.fieldValue || "";
+      fldEl.value = fldDef.fieldValue || fldDef.initialValue || "";
     }
     fldEl.size = 7;
-    if (fDecl.hint) lblEl.title = fDecl.hint;
-    lblEl.textContent = fDecl.label;
+    if (fldDef.hint) lblEl.title = fldDef.hint;
+    lblEl.textContent = fldDef.label;
     lblEl.appendChild( fldEl);
     return lblEl;
   }
@@ -938,12 +942,11 @@ oBJECTvIEW.createUiFromViewModel = function (viewModel) {
   // store the view model's DOM element
   viewModel.domElem = uiContainerEl;
   /*
-  if (uiContainerEl.tagName === "FORM") {  // reset custom validity
-    for (i=0; i < uiContainerEl.elements.length; i++) {
-      uiContainerEl.elements[i].setCustomValidity("");
-    }
-    uiContainerEl.reset();
+  // reset custom validity
+  for (i=0; i < uiContainerEl.elements.length; i++) {
+    uiContainerEl.elements[i].setCustomValidity("");
   }
+  uiContainerEl.reset();
   */
   // create UI elements for all view fields
   createUiElemsForVmFields();
