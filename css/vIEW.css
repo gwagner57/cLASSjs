@@ -147,11 +147,16 @@ form div.field-group > label > output {
   margin-left: 0.7em;
 }
 form div.I-O-field > label > input[type="text"],
+form div.I-O-field > label > input[type="number"],
 form div.yes-no-field > label > input[type="checkbox"],
 form div.select > label > select,
 form div.I-O-field > label > output {
   position: absolute;
   left: 12em;
+}
+form div.I-O-field > label > input[type="text"],
+form div.I-O-field > label > input[type="number"] {
+  width: 7em;
 }
 /*
 form div.yes-no-field > label > input[type="checkbox"] {

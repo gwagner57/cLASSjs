@@ -695,12 +695,20 @@ oBJECTvIEW.createUiFromViewModel = function (viewModel) {
    */
   function createLabeledTextField( fld) {
     var fldEl = null, lblEl = document.createElement("label"),
-        fldDef = fields[fld];   // field declaration
+        fldDef = fields[fld],   // field declaration
+        range = fldDef.range;
     if (fldDef.inputOutputMode === "O") {
       fldEl = document.createElement("output");
     } else {
       fldEl = document.createElement("input");
-      fldEl.type = "text";
+      if (cLASS.isIntegerType( range) || cLASS.isDecimalType( range)) {
+        fldEl.type = "number";
+        if (cLASS.isDecimalType( range)) {
+          if (!isNaN( parseInt( fldDef.decimalPlaces))) {
+            fldEl.step = "0." + "000000000".substring( 0, fldDef.decimalPlaces-1) + "1";
+          } else fldEl.step = "0.01";  // default
+        }
+      } else fldEl.type = "text";
       if (validateOnInput) {
         fldEl.addEventListener("input", function () {
           fldEl.setCustomValidity( cLASS.check( fld, fldDef, fldEl.value).message);
