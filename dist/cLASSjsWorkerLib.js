@@ -32,8 +32,6 @@ Array.prototype.isEqualTo = function (a2) {
         return el === a2[i]; });
 };
 
-
-
 /**
  * @fileOverview  Defines error classes (also called "exception" classes)
  * @author Gerd Wagner
@@ -820,49 +818,6 @@ function cLASS (classSlots) {
       return displayStr;
     };
     /***************************************************/
-/*
-    // A concise serialization method for logging
-    constr.prototype.toLogString = function () {
-    //***************************************************
-      var str1="", str2="", i=0;
-      var decimalPlaces = 2,
-          roundFactor = Math.pow( 10, decimalPlaces);
-      if (this.name) str1 = this.name;
-      else {
-        str1 = this.constructor.shortLabel || this.constructor.Name;
-        if (this.id) str1 += ":"+ this.id;
-      }
-      str2 = "{ ";
-      Object.keys( this).forEach( function (key) {
-        var propDecl = cLASS[this.constructor.Name].properties[key],
-            val = this[key], propLabel="", valStr="";
-        if (!propDecl || !propDecl.shortLabel) return;
-        propLabel = propDecl.shortLabel;
-        // if the property is a reference property?
-        if (cLASS[propDecl.range]) {
-          // if the reference property is multi-valued?
-          if (propDecl.maxCard && propDecl.maxCard > 1) {
-            if (Array.isArray( val)) {
-              valStr = val.map( function (o) {return o.id;}).toString();
-            } else valStr = JSON.stringify( Object.keys( val));
-          } else {  // if the reference property is single-valued
-            valStr = val.id;
-          }
-        } else {  // if the property is not a reference property
-          if (typeof val === "number" && !Number.isInteger(val)) {
-            valStr = JSON.stringify( Math.round( val * roundFactor) / roundFactor);
-          } else valStr = JSON.stringify( val);
-        }
-        if (val !== undefined) {
-          str2 += (i>0 ? ", " : "") + propLabel +": "+ valStr;
-          i = i+1;
-        }
-      }, this);
-      str2 += "}";
-      if (str2 === "{ }") str2 = "";
-      return str1 + str2;
-    };
-*/
     /***************************************************/
     // A class-level de-serialization method
     constr.createObjectFromRecord = function (record) {
@@ -941,6 +896,7 @@ cLASS.isIntegerType = function (T) {
   * @param {string} fld  The property for which a value is to be checked.
   * @param {object} decl  The property's declaration.
   * @param {string|number|boolean|object} val  The value to be checked.
+  * @param optParams.checkRefInt  Check referential integrity
   * @return {ConstraintViolation}  The constraint violation object.
   */
  cLASS.check = function (fld, decl, val, optParams) {
@@ -1245,15 +1201,16 @@ cLASS.isIntegerType = function (T) {
      }
    }
    val = maxCard === 1 ? valuesToCheck[0] : valuesToCheck;
+   // return deserialized value available in validationResult.checkedValue
    return new NoConstraintViolation( val);
  };
  /**
-  * Check if a value is of some type.
+  * Map range datatype to JS datatype.
   * @method
   * @author Gerd Wagner
-  * @return {boolean}
+  * @return {string}
   */
- cLASS.rangeToJsDataType = function ( range) {
+ cLASS.range2JsDataType = function ( range) {
    var jsDataType="";
    switch (range) {
      case "String":
