@@ -112,8 +112,8 @@ function cLASS (classSlots) {
         this[f] = instanceSlots[f];
       }, this);
     }
-    // is the class not abstract and does the object have an ID slot?
-    if (!classSlots.isAbstract && "id" in this) {
+    // is the class neither a complex DT nor abstract and does the object have an ID slot?
+    if (!classSlots.isComplexDatatype && !classSlots.isAbstract && "id" in this) {
       // add new object to the population/extension of the class
       cLASS[classSlots.Name].instances[String(this.id)] = this;
     }
@@ -201,7 +201,7 @@ function cLASS (classSlots) {
             if (range.constructor && range.constructor === cLASS) { // object reference(s)
               if (Array.isArray( val)) {
                 valuesToConvert = val.slice(0);  // clone;
-              } else {  // map from ID refs to obj refs
+              } else {  // val is a map from ID refs to obj refs
                 valuesToConvert = Object.values( val);
               }
             } else if (Array.isArray( val)) {
@@ -247,10 +247,12 @@ function cLASS (classSlots) {
         if (Array.isArray( val)) {
           valuesToConvert = val.slice(0);  // clone;
         } else console.log("The value of a multi-valued " +
-            "datatype property must be an array!");
+            "datatype property like "+ prop +"must be an array!");
       } else valuesToConvert = [val];
       valuesToConvert.forEach( function (v,i) {
-        if (eNUMERATION && range instanceof eNUMERATION) {
+        if (typeof propDecl.val2str === "function") {
+          valuesToConvert[i] = propDecl.val2str( v);
+        } else if (eNUMERATION && range instanceof eNUMERATION) {
           valuesToConvert[i] = range.labels[v-1];
         } else if (["number","string","boolean"].includes( typeof v) || !v) {
           valuesToConvert[i] = String( v);
@@ -262,9 +264,14 @@ function cLASS (classSlots) {
           if (typeof val === "object" && val.id !== undefined) {
             valuesToConvert[i] = val.id;
           } else {
-            valuesToConvert[i] = "";
+            valuesToConvert[i] = JSON.stringify( v);
+            propDecl.stringified = true;
+            console.log("Property "+ prop +" has a cLASS object value without an 'id' slot!");
           }
-        } else valuesToConvert[i] = JSON.stringify( v);
+        } else {
+          valuesToConvert[i] = JSON.stringify( v);
+          propDecl.stringified = true;
+        }
       });
       displayStr = valuesToConvert[0];
       if (propDecl.maxCard && propDecl.maxCard > 1) {
@@ -420,6 +427,15 @@ cLASS.isIntegerType = function (T) {
          }
        });
        break;
+     case "Identifier":
+       valuesToCheck.forEach( function (v) {
+         //TODO: add regexp test for name tokens
+         if (typeof v !== "string" || v.trim() === "") {
+           constrVio = new RangeConstraintViolation("Values for "+ fld +
+               " must be valid identifiers/names!");
+         }
+       });
+       break;
      case "Email":
        valuesToCheck.forEach( function (v) {
          if (typeof v !== "string" || !cLASS.patterns.EMAIL.test( v)) {
@@ -563,7 +579,21 @@ cLASS.isIntegerType = function (T) {
                        " must be an array of length " + range.size + "! " + JSON.stringify(v) + " is not admissible!");
                    break;
                  }
-                 for (i = 0; i < range.size; i++) {
+                 for (i = 0; i < v.length; i++) {
+                   if (!cLASS.isOfType(v[i], range.itemType)) {
+                     constrVio = new RangeConstraintViolation("The items of " + fld +
+                         " must be of type " + range.itemType + "! " + JSON.stringify(v) +
+                         " is not admissible!");
+                   }
+                 }
+                 break;
+               case "ArrayList":
+                 if (!Array.isArray(v)) {
+                   constrVio = new RangeConstraintViolation("The value of " + fld +
+                       " must be an array! " + JSON.stringify(v) + " is not admissible!");
+                   break;
+                 }
+                 for (i = 0; i < v.length; i++) {
                    if (!cLASS.isOfType(v[i], range.itemType)) {
                      constrVio = new RangeConstraintViolation("The items of " + fld +
                          " must be of type " + range.itemType + "! " + JSON.stringify(v) +

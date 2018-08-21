@@ -176,9 +176,14 @@ form fieldset {
   margin-bottom: 1em;  
 }
 form fieldset > label {
-  margin-right: 1em;  
+  margin-right: 1em;
 }
 form fieldset > label > input[type="radio"],
     form > fieldset > label > input[type="checkbox"] {
   margin-right: 0.5em;  
+}
+
+/* ClassPopulationWidget */
+td[contenteditable] {
+  background-color: hsl( 120, 80%, 95%); /* 120 = green */
 }

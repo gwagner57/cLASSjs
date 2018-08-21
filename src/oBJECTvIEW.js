@@ -569,18 +569,19 @@ oBJECTvIEW.prototype.render = function (parentEl) {
  * @method
  * @return {object} classPopulationUI
  */
-oBJECTvIEW.createClassPopulationWidget = function (Class, editableProperties) {
+oBJECTvIEW.createClassPopulationWidget = function (Class, editableProperties, optParams) {
   var popTableEl = dom.createElement("table", {
     id: Class.Name + "-PopTable",
     classValues: "PopTable"
   });
-  var headerRowEl=null, cell=null,
+  var headerRowEl=null, cell=null, objectIDs=[], rowIdx=0, obj=null, rowEl=null, N=0,
+      rowObjects=[], columnProperties=[],  // for mapping table cells to object slots
+      maxNmrOfRows = optParams ? optParams.maxNmrOfRows || 7 : 7,  // default is  7
       tBody = document.createElement("tBody");
-  var rowObjects=[], columnProperties=[];  // for mapping table cells to object slots
   if (editableProperties) columnProperties = editableProperties;
   else {
     Object.keys( Class.properties).forEach( function (p) {
-      if (p !== "id" && p !== "name") columnProperties.push( p);
+      if (p !== "id" && p !== "name" && Class.properties[p].label) columnProperties.push( p);
     });
   }
   popTableEl.appendChild( tBody);
@@ -590,7 +591,7 @@ oBJECTvIEW.createClassPopulationWidget = function (Class, editableProperties) {
   popTableEl.appendChild( document.createElement("thead"));
   headerRowEl = popTableEl.tHead.insertRow();
   cell = headerRowEl.insertCell();
-  cell.textContent = Class.Name;
+  cell.textContent = Class.label || Class.Name;
   cell.colSpan = Object.keys( Class.properties).length + 1;
   // create fixed "ID/Name" column heading
   headerRowEl = popTableEl.tHead.insertRow();
@@ -601,16 +602,18 @@ oBJECTvIEW.createClassPopulationWidget = function (Class, editableProperties) {
     if (columnProperties.includes( p)) {
       c = headerRowEl.insertCell();
       c.textContent = Class.properties[p].label || p;
-    };
+    }
   });
-  // create rows for all objects
-  Object.keys( Class.instances).forEach( function (objIdStr,i) {
-    var obj = Class.instances[objIdStr],
-        rowEl = tBody.insertRow();
+  // create table rows
+  objectIDs = Object.keys( Class.instances);
+  N = Math.min( objectIDs.length, maxNmrOfRows);
+  for (rowIdx=0; rowIdx < N; rowIdx++) {
+    obj = Class.instances[objectIDs[rowIdx]];
+    rowEl = tBody.insertRow();
     // create object row
-    rowObjects[i] = obj;
-    // create property value cells for own properties TODO: support inherited properties
+    rowObjects[rowIdx] = obj;
     rowEl.insertCell().textContent = obj.name ? obj.id +" / "+ obj.name : obj.id;
+    // create property value cells for own properties TODO: support inherited properties
     Object.keys( Class.properties).forEach( function (p) {
       var c=null;
       if (columnProperties.includes( p)) {
@@ -619,8 +622,8 @@ oBJECTvIEW.createClassPopulationWidget = function (Class, editableProperties) {
         c.textContent = obj.getValueAsString( p);
         // save value for being able to restore it
         c.setAttribute("data-oldVal", c.textContent);
-        c.setAttribute("contenteditable","true");
-        c.title = "Click to change!";
+        if (!Class.properties[p].stringified) c.setAttribute("contenteditable","true");
+        c.title = "Click to edit!";
         c.addEventListener("blur", function (e) {
           var tdEl = e.target,
               val = tdEl.textContent,
@@ -638,9 +641,21 @@ oBJECTvIEW.createClassPopulationWidget = function (Class, editableProperties) {
             tdEl.setAttribute("data-oldVal", tdEl.textContent);
           }
         });
-      };
+      }
     });
-  });
+  }
+  // create an overflow indication row
+  if (objectIDs.length > maxNmrOfRows) {
+    rowEl = tBody.insertRow();
+    rowEl.insertCell().textContent = "...";
+    Object.keys( Class.properties).forEach( function (p) {
+      var c=null;
+      if (columnProperties.includes( p)) {
+        c = rowEl.insertCell();
+        c.textContent = "...";
+      }
+    });
+  }
   // create an AddRow button
   //oBJECTvIEW.createUiElemsForUserActions( popTableEl, this.userActions);
   return popTableEl;
