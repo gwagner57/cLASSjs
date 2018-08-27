@@ -17,8 +17,8 @@ table, td, th {
 thead, th {
   background: aliceblue;
 }
-/* Center the class name of a class population widget */
-table.PopTable>thead>tr:first-child  {
+/* Center the class name of a record table widget */
+table.RecTbl>thead>tr:first-child  {
   text-align: center;
 }
 
@@ -129,11 +129,13 @@ form > div.I-O-field > label {
 form div.field-group > label {
   display: inline-block;
   width: 20em;
-  margin-left: 1em;
+  margin-right: 1em;
 }
+/*
 form div.field-group > label:first-child {
   margin-left: 0;
 }
+*/
 form div.field-group > label > output {
   position: absolute;
   left: 12em;
@@ -185,5 +187,5 @@ form fieldset > label > input[type="radio"],
 
 /* ClassPopulationWidget */
 td[contenteditable] {
-  background-color: hsl( 120, 80%, 95%); /* 120 = green */
+  background-color: hsl( 120, 100%, 95%); /* 120 = green */
 }

@@ -121,6 +121,7 @@ function cLASS (classSlots) {
   // assign class-level (meta-)properties
   constr.constructor = cLASS;
   constr.Name = classSlots.Name;
+  if (classSlots.isComplexDatatype) constr.isComplexDatatype = true;
   if (classSlots.isAbstract) constr.isAbstract = true;
   if (classSlots.shortLabel) constr.shortLabel = classSlots.shortLabel;
   if (supertypeName) {
@@ -261,18 +262,18 @@ function cLASS (classSlots) {
         } else if (Array.isArray( v)) {  // JSON-compatible array
           valuesToConvert[i] = v.slice(0);  // clone
         } else if (typeof range === "string" && cLASS[range]) {
-          if (typeof val === "object" && val.id !== undefined) {
-            valuesToConvert[i] = val.id;
+          if (typeof v === "object" && v.id !== undefined) {
+            valuesToConvert[i] = v.id;
           } else {
-            valuesToConvert[i] = JSON.stringify( v);
+            valuesToConvert[i] = v.toString();
             propDecl.stringified = true;
-            console.log("Property "+ prop +" has a cLASS object value without an 'id' slot!");
+            console.log("Property "+ this.constructor.Name +"::"+ prop +" has a cLASS object value without an 'id' slot!");
           }
         } else {
           valuesToConvert[i] = JSON.stringify( v);
           propDecl.stringified = true;
         }
-      });
+      }, this);
       displayStr = valuesToConvert[0];
       if (propDecl.maxCard && propDecl.maxCard > 1) {
         displayStr = "[" + displayStr;

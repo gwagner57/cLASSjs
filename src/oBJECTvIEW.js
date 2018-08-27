@@ -569,88 +569,112 @@ oBJECTvIEW.prototype.render = function (parentEl) {
  * @method
  * @return {object} classPopulationUI
  */
-oBJECTvIEW.createClassPopulationWidget = function (Class, editableProperties, optParams) {
-  var popTableEl = dom.createElement("table", {
-    id: Class.Name + "-PopTable",
-    classValues: "PopTable"
-  });
-  var headerRowEl=null, cell=null, objectIDs=[], rowIdx=0, obj=null, rowEl=null, N=0,
-      rowObjects=[], columnProperties=[],  // for mapping table cells to object slots
-      maxNmrOfRows = optParams ? optParams.maxNmrOfRows || 7 : 7,  // default is  7
-      tBody = document.createElement("tBody");
-  if (editableProperties) columnProperties = editableProperties;
-  else {
-    Object.keys( Class.properties).forEach( function (p) {
-      if (p !== "id" && p !== "name" && Class.properties[p].label) columnProperties.push( p);
-    });
-  }
-  popTableEl.appendChild( tBody);
-  // store properties displayed in table  TODO: currently not used...
-  popTableEl.setAttribute("data-properties", columnProperties.join(" "));
-  // create table heading
-  popTableEl.appendChild( document.createElement("thead"));
-  headerRowEl = popTableEl.tHead.insertRow();
-  cell = headerRowEl.insertCell();
-  cell.textContent = Class.label || Class.Name;
-  cell.colSpan = Object.keys( Class.properties).length + 1;
-  // create fixed "ID/Name" column heading
-  headerRowEl = popTableEl.tHead.insertRow();
-  headerRowEl.insertCell().textContent = "ID/Name";
-  // create column headings for other columns
-  Object.keys( Class.properties).forEach( function (p) {
-    var c=null;
-    if (columnProperties.includes( p)) {
-      c = headerRowEl.insertCell();
-      c.textContent = Class.properties[p].label || p;
+oBJECTvIEW.createRecordTableWidget = function (recordSrc, optParams) {
+  var tableEl = dom.createElement("table", {classValues: "RecTbl"});
+  var headerRowEl=null, cell=null, rowIdx=0, obj=null, rowEl=null, N=0,
+      rowObjects=[], colProperties=[],  colHeadings=[], records=null,
+      maxNmrOfRows = optParams ? optParams.maxNmrOfRows || 13 : 13,  // default is 13
+      tBody = document.createElement("tBody"),
+      tableTitle = recordSrc.label || recordSrc.Name || "",
+      keys=[], nmrOfRecords=0;
+  tableEl.appendChild( tBody);
+  if (recordSrc.constructor === cLASS) {
+    // recordSrc is a cLASS
+    if (optParams && optParams.editableProperties) colProperties = optParams.editableProperties;
+    else {
+      Object.keys( recordSrc.properties).forEach( function (p) {
+        if (p !== "id" && p !== "name" && recordSrc.properties[p].label) {
+          colProperties.push( p);
+          colHeadings.push( recordSrc.properties[p].label);
+        }
+      });
     }
+    records = recordSrc.instances;
+    keys = Object.keys( records);
+    nmrOfRecords = keys.length;
+  } else if (Array.isArray( recordSrc)) {
+    // recordSrc is an array list of typed objects or records
+    colProperties = Object.keys( recordSrc[0]);
+    colHeadings = colProperties;
+    records = recordSrc;
+    nmrOfRecords = records.length;
+  } else if (typeof recordSrc === "object") {
+    // recordSrc is a map of records
+    colProperties = Object.keys( recordSrc[keys[0]]);
+    colHeadings = colProperties;
+    records = recordSrc;
+    keys = Object.keys( records);
+    nmrOfRecords = keys.length;
+  }
+  // store properties displayed in table  TODO: currently not used...
+  tableEl.setAttribute("data-properties", colProperties.join(" "));
+  // create table heading
+  tableEl.appendChild( document.createElement("thead"));
+  // create row for table name
+  headerRowEl = tableEl.tHead.insertRow();
+  cell = headerRowEl.insertCell();
+  cell.textContent = tableTitle;
+  cell.colSpan = colProperties.length;
+  if (!(optParams && optParams.noIdCol)) cell.colSpan++;
+  // create row for column names
+  headerRowEl = tableEl.tHead.insertRow();
+  if (!(optParams && optParams.noIdCol)) {
+    // create "ID/Name" column heading
+    headerRowEl.insertCell().textContent = "ID/Name";
+  }
+  // create table column headings for other columns
+  colHeadings.forEach( function (cH) {
+    var c = headerRowEl.insertCell();
+    c.textContent = cH;
   });
   // create table rows
-  objectIDs = Object.keys( Class.instances);
-  N = Math.min( objectIDs.length, maxNmrOfRows);
+  N = Math.min( nmrOfRecords, maxNmrOfRows);
   for (rowIdx=0; rowIdx < N; rowIdx++) {
-    obj = Class.instances[objectIDs[rowIdx]];
+    obj = keys ? records[keys[rowIdx]] : records[rowIdx];
     rowEl = tBody.insertRow();
     // create object row
     rowObjects[rowIdx] = obj;
-    rowEl.insertCell().textContent = obj.name ? obj.id +" / "+ obj.name : obj.id;
-    // create property value cells for own properties TODO: support inherited properties
-    Object.keys( Class.properties).forEach( function (p) {
+    if (obj.id) {
+      rowEl.insertCell().textContent = obj.name ? obj.id +" / "+ obj.name : obj.id;
+    }
+    // create property value cells  TODO: support inherited properties of clASSes
+    colProperties.forEach( function (p) {
       var c=null;
-      if (columnProperties.includes( p)) {
-        c = rowEl.insertCell();
-        //c.textContent = cLASS.convertPropValToStr( Class, p, obj[p]);
-        c.textContent = obj.getValueAsString( p);
-        // save value for being able to restore it
-        c.setAttribute("data-oldVal", c.textContent);
-        if (!Class.properties[p].stringified) c.setAttribute("contenteditable","true");
+      c = rowEl.insertCell();
+      //c.textContent = cLASS.convertPropValToStr( Class, p, obj[p]);
+      c.textContent = recordSrc.constructor === cLASS ? obj.getValueAsString( p) : obj[p];
+      // save value for being able to restore it
+      c.setAttribute("data-oldVal", c.textContent);
+      if (!recordSrc.properties || !recordSrc.properties[p].stringified) {
+        c.setAttribute("contenteditable","true");
         c.title = "Click to edit!";
-        c.addEventListener("blur", function (e) {
-          var tdEl = e.target,
-              val = tdEl.textContent,
-              colNo = tdEl.cellIndex - 1, // skip first column (name/ID)
-              rowNo = tdEl.parentElement.rowIndex - 2,  // rowIndex includes 2 tHead rows
-              prop = columnProperties[colNo],
-              constrVio = cLASS.check( prop, Class.properties[prop], val);
-          if (constrVio.message) {
-            alert( constrVio.message);
-            tdEl.textContent = tdEl.getAttribute("data-oldVal");
-          } else {
-            val = constrVio.checkedValue;
-            // update corresponding object slot
-            rowObjects[rowNo][prop] = val;
-            tdEl.setAttribute("data-oldVal", tdEl.textContent);
-          }
-        });
       }
+      c.addEventListener("blur", function (e) {
+        var tdEl = e.target,
+            val = tdEl.textContent,
+            colNo = tdEl.cellIndex - 1, // skip first column (name/ID)
+            rowNo = tdEl.parentElement.rowIndex - 2,  // rowIndex includes 2 tHead rows
+            prop = colProperties[colNo],
+            constrVio = cLASS.check( prop, recordSrc.properties[prop], val);
+        if (constrVio.message) {
+          alert( constrVio.message);
+          tdEl.textContent = tdEl.getAttribute("data-oldVal");
+        } else {
+          val = constrVio.checkedValue;
+          // update corresponding object slot
+          rowObjects[rowNo][prop] = val;
+          tdEl.setAttribute("data-oldVal", tdEl.textContent);
+        }
+      });
     });
   }
   // create an overflow indication row
-  if (objectIDs.length > maxNmrOfRows) {
+  if (nmrOfRecords > maxNmrOfRows) {
     rowEl = tBody.insertRow();
-    rowEl.insertCell().textContent = "...";
-    Object.keys( Class.properties).forEach( function (p) {
+    if (obj.id) rowEl.insertCell().textContent = "...";
+    Object.keys( recordSrc.properties).forEach( function (p) {
       var c=null;
-      if (columnProperties.includes( p)) {
+      if (colProperties.includes( p)) {
         c = rowEl.insertCell();
         c.textContent = "...";
       }
@@ -658,7 +682,7 @@ oBJECTvIEW.createClassPopulationWidget = function (Class, editableProperties, op
   }
   // create an AddRow button
   //oBJECTvIEW.createUiElemsForUserActions( popTableEl, this.userActions);
-  return popTableEl;
+  return tableEl;
 };
 /**
  * Create UI elements (like buttons) for all user actions of the view
