@@ -534,10 +534,11 @@ oBJECTvIEW.prototype.render = function (parentEl) {
   /* MAIN CODE of render                                                  */
   /* ==================================================================== */
   uiContainerEl = dom.createElement(
-      !parentEl ? "form":"div", {id: this.modelObject ? this.modelObject.objectName :
-            Object.keys( this.modelObjects)[0]});
+      !parentEl ? "form":"div", {id: this.modelObject ?
+            this.modelObject.objectName : Object.keys( this.modelObjects)[0],
+            classValues:"oBJECTvIEW"});
   if (this.heading) {
-    uiContainerEl.appendChild( dom.createElement("h2", {content:this.heading}));
+    uiContainerEl.appendChild( dom.createElement("h1", {content:this.heading}));
   }
   // store the object view's DOM element
   this.domElem = uiContainerEl;

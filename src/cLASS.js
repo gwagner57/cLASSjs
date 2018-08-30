@@ -477,6 +477,7 @@ cLASS.isIntegerType = function (T) {
          }
        });
        break;
+     case "AutoNumber":
      case "PositiveInteger":
        valuesToCheck.forEach( function (v) {
          if (!Number.isInteger(v) || v < 1) {
