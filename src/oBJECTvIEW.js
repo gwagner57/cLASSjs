@@ -278,7 +278,7 @@ var oBJECTvIEW = function (slots) {
  * @return {object} dataBinding
  */
 oBJECTvIEW.maxCardButtonGroup = 7;
-oBJECTvIEW.prototype.render = function (parentEl) {
+oBJECTvIEW.prototype.render = function (objViewParentEl) {
   var fields = this.fields,  // fields map
       fieldOrder = this.fieldOrder,  // field order array
       mObject = this.modelObject,  // model object
@@ -287,7 +287,7 @@ oBJECTvIEW.prototype.render = function (parentEl) {
       dataBinding = {},
       userActions = this.userActions,
       validateOnInput = true,
-      fldGrpSep = this.fieldGroupSeparator,
+      uiElemType = "form", parentEl=null,
       maxELforButton = 7,
       uiContainerEl=null, footerEl=null, i=0;
   /* ==================================================================== */
@@ -482,6 +482,10 @@ oBJECTvIEW.prototype.render = function (parentEl) {
           if (!containerEl.className) containerEl.className = "select";
           containerEl.appendChild( createSelectionList( fld));
         }
+      } else if (range && range.constructor === cLASS && range.isComplexDatatype) {
+        if (!containerEl.className) containerEl.className = "RecordTableWidget";
+        mObject[fld].label = fDef.label;
+        containerEl.appendChild( oBJECTvIEW.createRecordTableWidget( mObject[fld]));
       } else if (range === "Boolean") {
         if (!containerEl.className) containerEl.className = "yes-no-field";
         containerEl.appendChild( createLabeledYesNoField( fld));
@@ -533,25 +537,37 @@ oBJECTvIEW.prototype.render = function (parentEl) {
   /* ==================================================================== */
   /* MAIN CODE of render                                                  */
   /* ==================================================================== */
+  // check if objView is descendant of a "form" element
+  parentEl = objViewParentEl;
+  while (parentEl && parentEl.tagName !== "BODY") {
+    if (parentEl.tagName === "FORM") {
+      uiElemType = "div";
+      break;
+    } else {
+      parentEl = parentEl.parentElement;
+    }
+  }
   uiContainerEl = dom.createElement(
-      !parentEl ? "form":"div", {id: this.modelObject ?
-            this.modelObject.objectName : Object.keys( this.modelObjects)[0],
-            classValues:"oBJECTvIEW"});
+    uiElemType,
+    {id: this.modelObject ?
+         this.modelObject.objectName : Object.keys( this.modelObjects)[0],
+     classValues:"oBJECTvIEW"}
+   );
   if (this.heading) {
     uiContainerEl.appendChild( dom.createElement("h1", {content:this.heading}));
   }
   // store the object view's DOM element
   this.domElem = uiContainerEl;
-  if (!parentEl) parentEl = document.querySelector("#uiContainerEl");
-  if (!parentEl) {
-    parentEl = document.body;
+  if (!objViewParentEl) objViewParentEl = document.querySelector("#uiContainerEl");
+  if (!objViewParentEl) {
+    objViewParentEl = document.body;
     footerEl = document.querySelector("html>body>footer");
     if (footerEl) {
       document.body.insertBefore( uiContainerEl, footerEl);
     } else {
       document.body.appendChild( uiContainerEl);
     }
-  } else parentEl.appendChild( uiContainerEl);
+  } else objViewParentEl.appendChild( uiContainerEl);
   if (uiContainerEl.tagName === "FORM") {  // reset custom validity
     for (i=0; i < uiContainerEl.elements.length; i++) {
       uiContainerEl.elements[i].setCustomValidity("");
@@ -573,40 +589,54 @@ oBJECTvIEW.prototype.render = function (parentEl) {
 oBJECTvIEW.createRecordTableWidget = function (recordSrc, optParams) {
   var tableEl = dom.createElement("table", {classValues: "RecTbl"});
   var headerRowEl=null, cell=null, rowIdx=0, obj=null, rowEl=null, N=0,
-      rowObjects=[], colProperties=[],  colHeadings=[], records=null,
+      objOrRecType=null, rowObjects=[], colProperties=[],  colHeadings=[], colTypes=[],
       maxNmrOfRows = optParams ? optParams.maxNmrOfRows || 13 : 13,  // default is 13
       tBody = document.createElement("tBody"),
       tableTitle = recordSrc.label || recordSrc.Name || "",
-      keys=[], nmrOfRecords=0;
+      keys=[], records=null, nmrOfRecords=0, objProps=[];
   tableEl.appendChild( tBody);
   if (recordSrc.constructor === cLASS) {
     // recordSrc is a cLASS
-    if (optParams && optParams.editableProperties) colProperties = optParams.editableProperties;
-    else {
-      Object.keys( recordSrc.properties).forEach( function (p) {
-        if (p !== "id" && p !== "name" && recordSrc.properties[p].label) {
-          colProperties.push( p);
-          colHeadings.push( recordSrc.properties[p].label);
-        }
-      });
+    objOrRecType = recordSrc;
+    if (optParams && optParams.editableProperties) {
+      colProperties = optParams.editableProperties;
     }
-    records = recordSrc.instances;
+    records = objOrRecType.instances;
     keys = Object.keys( records);
     nmrOfRecords = keys.length;
+    objProps = Object.keys( records[keys[0]]);
   } else if (Array.isArray( recordSrc)) {
-    // recordSrc is an array list of typed objects or records
-    colProperties = Object.keys( recordSrc[0]);
-    colHeadings = colProperties;
+    // recordSrc is an array list of typed objects or typed records
+    objOrRecType = recordSrc[0].constructor;
     records = recordSrc;
     nmrOfRecords = records.length;
+    objProps = Object.keys( records[0]);
   } else if (typeof recordSrc === "object") {
-    // recordSrc is a map of records
-    colProperties = Object.keys( recordSrc[keys[0]]);
-    colHeadings = colProperties;
+    // recordSrc is a map of typed records (= instances of compl. datatype classes)
+    objOrRecType = recordSrc[keys[0]].constructor;
     records = recordSrc;
     keys = Object.keys( records);
     nmrOfRecords = keys.length;
+    objProps = Object.keys( records[keys[0]]);
   }
+
+  if (objProps.includes("id")) {
+    if (objProps.includes("name")) {
+      colHeadings[0] = "ID/Name";
+    } else {
+      colHeadings[0] = "ID";
+    }
+  } else if (objProps.includes("name")) {
+    colHeadings[0] = "Name";
+  }
+  Object.keys( objOrRecType.properties).forEach( function (p) {
+    var propDef = objOrRecType.properties[p];
+    if (p !== "id" && p !== "name" && propDef.label) {
+      colProperties.push( p);
+      colHeadings.push( propDef.label);
+      colTypes.push( propDef.range);
+    }
+  });
   // store properties displayed in table  TODO: currently not used...
   tableEl.setAttribute("data-properties", colProperties.join(" "));
   // create table heading
@@ -615,15 +645,10 @@ oBJECTvIEW.createRecordTableWidget = function (recordSrc, optParams) {
   headerRowEl = tableEl.tHead.insertRow();
   cell = headerRowEl.insertCell();
   cell.textContent = tableTitle;
-  cell.colSpan = colProperties.length;
-  if (!(optParams && optParams.noIdCol)) cell.colSpan++;
+  cell.colSpan = colHeadings.length;
   // create row for column names
   headerRowEl = tableEl.tHead.insertRow();
-  if (!(optParams && optParams.noIdCol)) {
-    // create "ID/Name" column heading
-    headerRowEl.insertCell().textContent = "ID/Name";
-  }
-  // create table column headings for other columns
+  // create table column headings
   colHeadings.forEach( function (cH) {
     var c = headerRowEl.insertCell();
     c.textContent = cH;
@@ -631,12 +656,14 @@ oBJECTvIEW.createRecordTableWidget = function (recordSrc, optParams) {
   // create table rows
   N = Math.min( nmrOfRecords, maxNmrOfRows);
   for (rowIdx=0; rowIdx < N; rowIdx++) {
-    obj = keys ? records[keys[rowIdx]] : records[rowIdx];
+    obj = keys.length>0 ? records[keys[rowIdx]] : records[rowIdx];
     rowEl = tBody.insertRow();
     // create object row
     rowObjects[rowIdx] = obj;
     if (obj.id) {
       rowEl.insertCell().textContent = obj.name ? obj.id +" / "+ obj.name : obj.id;
+    } else if (obj.name) {
+      rowEl.insertCell().textContent = obj.name;
     }
     // create property value cells  TODO: support inherited properties of clASSes
     colProperties.forEach( function (p) {
