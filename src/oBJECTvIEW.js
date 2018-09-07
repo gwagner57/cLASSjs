@@ -165,13 +165,17 @@ var oBJECTvIEW = function (slots) {
           }
           if (this.suppressNoValueFields && mo[fld] === undefined) continue;
           // else
-          this.fields[fld] = {
-            moName: mo.objectName,
-            label: properties[fld].label,
-            hint: properties[fld].hint,
-            range: properties[fld].range,
-            inputOutputMode:"I/O"
-          };
+          this.fields[fld] = util.cloneRecord( properties[fld]);
+          // in case range is a JS constructor function or object
+          if (typeof properties[fld].range !== "string") {
+            if (cLASS[properties[fld].range.Name]) {
+              this.fields[fld].range = properties[fld].range.Name;
+            } else {
+              this.fields[fld].range = properties[fld].range;
+            }
+          }
+          this.fields[fld].moName = mo.objectName;
+          this.fields[fld].inputOutputMode = "I/O";
           fldOrdEl.push( fld);
         } else if (typeof fld === "object") {  // field definition
           properties = this.modelObject.properties;
@@ -471,6 +475,8 @@ oBJECTvIEW.prototype.render = function (objViewParentEl) {
           range = fDef.range,
           isEnum = range instanceof eNUMERATION,
           isArr = Array.isArray( range);
+      // convert cLASS Name to cLASS object
+      if (typeof range === "string" && cLASS[range]) range = cLASS[range];
       // retrieve model object for views based on multiple model objects
       if (mObjects) mObject = mObjects[fDef.moName];
       if (isEnum || isArr) {  // (ad-hoc) enumeration
@@ -483,9 +489,11 @@ oBJECTvIEW.prototype.render = function (objViewParentEl) {
           containerEl.appendChild( createSelectionList( fld));
         }
       } else if (range && range.constructor === cLASS && range.isComplexDatatype) {
-        if (!containerEl.className) containerEl.className = "RecordTableWidget";
-        mObject[fld].label = fDef.label;
-        containerEl.appendChild( oBJECTvIEW.createRecordTableWidget( mObject[fld]));
+        if (fDef.maxCard && fDef.maxCard > 1) {
+          if (!containerEl.className) containerEl.className = "RecordTableWidget";
+          containerEl.appendChild( oBJECTvIEW.createRecordTableWidget(
+              {type: range, records: mObject[fld], tableTitle: fDef.label}));
+        }
       } else if (range === "Boolean") {
         if (!containerEl.className) containerEl.className = "yes-no-field";
         containerEl.appendChild( createLabeledYesNoField( fld));
@@ -526,12 +534,16 @@ oBJECTvIEW.prototype.render = function (objViewParentEl) {
       classValues:"action-group"
     });
     Object.keys( userActions).forEach( function (usrAct) {
-      containerEl.appendChild( dom.createButton({
-        name: usrAct,
-        label: userActions[usrAct].label || util.capitalizeFirstChar( usrAct),
-        handler: userActions[usrAct]
-      }));
-      parentEl.appendChild( containerEl);
+      var renderActBtn = typeof userActions[usrAct].showCondition !== "function" ||
+          userActions[usrAct].showCondition();
+      if (renderActBtn) {
+        containerEl.appendChild( dom.createButton({
+          name: usrAct,
+          label: userActions[usrAct].label || util.capitalizeFirstChar( usrAct),
+          handler: userActions[usrAct]
+        }));
+        parentEl.appendChild( containerEl);
+      }
     });
   }
   /* ==================================================================== */
@@ -554,7 +566,7 @@ oBJECTvIEW.prototype.render = function (objViewParentEl) {
      classValues:"oBJECTvIEW"}
    );
   if (this.heading) {
-    uiContainerEl.appendChild( dom.createElement("h1", {content:this.heading}));
+    uiContainerEl.appendChild( dom.createElement("h2", {content:this.heading}));
   }
   // store the object view's DOM element
   this.domElem = uiContainerEl;
@@ -581,62 +593,63 @@ oBJECTvIEW.prototype.render = function (objViewParentEl) {
   return dataBinding;  // a map of field names to corresponding DOM elements 
 };
 /**
- * Set up a tabular UI for defining the objects/population of a given cLASS
+ * Set up a tabular UI for defining/editing entity records of a given
+ * entity type or data records of a given complex datatype
  * @author Gerd Wagner
  * @method
- * @return {object} classPopulationUI
+ * @param slots.type  a cLASS
+ * @param slots.records?  a collection (array list or map) of records
+ * @return {object}  the created DOM element object
  */
-oBJECTvIEW.createRecordTableWidget = function (recordSrc, optParams) {
+oBJECTvIEW.createRecordTableWidget = function (slots) {
   var tableEl = dom.createElement("table", {classValues: "RecTbl"});
   var headerRowEl=null, cell=null, rowIdx=0, obj=null, rowEl=null, N=0,
-      objOrRecType=null, rowObjects=[], colProperties=[],  colHeadings=[], colTypes=[],
-      maxNmrOfRows = optParams ? optParams.maxNmrOfRows || 13 : 13,  // default is 13
+      rowObjects=[], colProperties=[],  colHeadings=[], colTypes=[],
+      maxNmrOfRows = slots.maxNmrOfRows || 13,  // default is 13
       tBody = document.createElement("tBody"),
-      tableTitle = recordSrc.label || recordSrc.Name || "",
-      keys=[], records=null, nmrOfRecords=0, objProps=[];
-  tableEl.appendChild( tBody);
-  if (recordSrc.constructor === cLASS) {
-    // recordSrc is a cLASS
-    objOrRecType = recordSrc;
-    if (optParams && optParams.editableProperties) {
-      colProperties = optParams.editableProperties;
-    }
-    records = objOrRecType.instances;
-    keys = Object.keys( records);
-    nmrOfRecords = keys.length;
-    objProps = Object.keys( records[keys[0]]);
-  } else if (Array.isArray( recordSrc)) {
-    // recordSrc is an array list of typed objects or typed records
-    objOrRecType = recordSrc[0].constructor;
-    records = recordSrc;
-    nmrOfRecords = records.length;
-    objProps = Object.keys( records[0]);
-  } else if (typeof recordSrc === "object") {
-    // recordSrc is a map of typed records (= instances of compl. datatype classes)
-    objOrRecType = recordSrc[keys[0]].constructor;
-    records = recordSrc;
-    keys = Object.keys( records);
-    nmrOfRecords = keys.length;
-    objProps = Object.keys( records[keys[0]]);
+      Class=null, propDefs=null, tableTitle = "",
+      keys=[], records=null, nmrOfRecords=0, p="";
+  if (!slots.type) {
+    throw Error("No type provided when calling 'createRecordTableWidget'!")
   }
-
-  if (objProps.includes("id")) {
-    if (objProps.includes("name")) {
-      colHeadings[0] = "ID/Name";
-    } else {
-      colHeadings[0] = "ID";
-    }
-  } else if (objProps.includes("name")) {
+  // convert cLASS name to cLASS object reference
+  if (typeof slots.type === "string" && cLASS[slots.type]) {
+    Class = cLASS[slots.type];
+  } else if (typeof slots.type === "object" && slots.type.constructor === cLASS) {
+    Class = slots.type;
+  } else {
+    throw Error("No cLASS type provided when calling 'createRecordTableWidget'!")
+  }
+  propDefs = Class.properties;
+  tableEl.appendChild( tBody);
+  tableTitle = slots.tableTitle || Class.label || Class.Name;
+  if (!Class.isComplexDatatype) {
+    if (slots.editableProperties) colProperties = slots.editableProperties;
+    records = slots.records || Class.instances;
+    keys = Object.keys( records);
+    nmrOfRecords = keys.length;
+  } else if (Array.isArray( slots.records)) {
+    records = slots.records || [];
+    nmrOfRecords = records.length;
+  } else if (typeof slots.records === "object") { // a map
+    records = slots.records || {};
+    keys = Object.keys( records);
+    nmrOfRecords = keys.length;
+  }
+  if (propDefs.id) {
+    if (propDefs.name) colHeadings[0] = "ID/Name";
+    else colHeadings[0] = "ID";
+  } else if (propDefs.name) {
     colHeadings[0] = "Name";
   }
-  Object.keys( objOrRecType.properties).forEach( function (p) {
-    var propDef = objOrRecType.properties[p];
-    if (p !== "id" && p !== "name" && propDef.label) {
+  // loop over all property definitions (including inherited ones)
+  for (p in propDefs) {
+    if (p !== "id" && p !== "name" && propDefs[p].label) {
       colProperties.push( p);
-      colHeadings.push( propDef.label);
-      colTypes.push( propDef.range);
+      colHeadings.push( propDefs[p].label);
+      colTypes.push( propDefs[p].range);
     }
-  });
+  }
   // store properties displayed in table  TODO: currently not used...
   tableEl.setAttribute("data-properties", colProperties.join(" "));
   // create table heading
@@ -665,15 +678,15 @@ oBJECTvIEW.createRecordTableWidget = function (recordSrc, optParams) {
     } else if (obj.name) {
       rowEl.insertCell().textContent = obj.name;
     }
-    // create property value cells  TODO: support inherited properties of clASSes
+    // create property value cells
     colProperties.forEach( function (p) {
       var c=null;
       c = rowEl.insertCell();
       //c.textContent = cLASS.convertPropValToStr( Class, p, obj[p]);
-      c.textContent = recordSrc.constructor === cLASS ? obj.getValueAsString( p) : obj[p];
+      c.textContent = obj.getValueAsString( p);
       // save value for being able to restore it
       c.setAttribute("data-oldVal", c.textContent);
-      if (!recordSrc.properties || !recordSrc.properties[p].stringified) {
+      if (!propDefs || !propDefs[p].stringified) {
         c.setAttribute("contenteditable","true");
         c.title = "Click to edit!";
       }
@@ -683,7 +696,7 @@ oBJECTvIEW.createRecordTableWidget = function (recordSrc, optParams) {
             colNo = tdEl.cellIndex - 1, // skip first column (name/ID)
             rowNo = tdEl.parentElement.rowIndex - 2,  // rowIndex includes 2 tHead rows
             prop = colProperties[colNo],
-            constrVio = cLASS.check( prop, recordSrc.properties[prop], val);
+            constrVio = cLASS.check( prop, propDefs[prop], val);
         if (constrVio.message) {
           alert( constrVio.message);
           tdEl.textContent = tdEl.getAttribute("data-oldVal");
@@ -700,7 +713,7 @@ oBJECTvIEW.createRecordTableWidget = function (recordSrc, optParams) {
   if (nmrOfRecords > maxNmrOfRows) {
     rowEl = tBody.insertRow();
     if (obj.id) rowEl.insertCell().textContent = "...";
-    Object.keys( recordSrc.properties).forEach( function (p) {
+    Object.keys( propDefs).forEach( function (p) {
       var c=null;
       if (colProperties.includes( p)) {
         c = rowEl.insertCell();

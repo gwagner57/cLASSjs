@@ -81,11 +81,14 @@
    if (test.okay) showSuccessMessage();
    else test.okay = true;  // reset test.okay
 
-   //*** Test Suite 2 ***
+   //*** Test Suite 2 ***********************************************************
    document.body.appendChild( dom.createElement("h2",{content:"Test Suite 2: Class Hierarchies and Inheritance"}));
 
    test( "ServiceDesk.constructor should be cLASS",
        ServiceDesk.constructor === cLASS
+   );
+   test("Is ServiceDesk instanceof cLASS?",
+       ServiceDesk instanceof cLASS
    );
    test( "ServiceDesk.constructor.name should be 'cLASS'",
        ServiceDesk.constructor.name === "cLASS"
@@ -110,8 +113,6 @@
        atm1.model === "Siemens"
    );
 
-   // showInfo("atm1.toString() = "+ atm1.toString());
-
    var SiemensATM = new cLASS({
      Name: "SiemensATM",
      supertypeName: "ATM",
@@ -130,8 +131,6 @@
    test( "The class SiemensATM should have the property 'specialFeature'",
        SiemensATM.properties['specialFeature']
    );
-
-   showInfo("JSON.stringify( SiemensATM.properties) = "+ JSON.stringify( SiemensATM.properties));
 
    if (test.okay) showSuccessMessage();
    else test.okay = true;  // reset test.okay

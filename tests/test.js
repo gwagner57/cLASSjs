@@ -5,8 +5,6 @@ function test( message, condition) {
     showFailureMessage( message);
   }
 }
-test.okay = true;
-
 function showFailureMessage(txt) {
   document.body.appendChild( dom.createElement("p",
 	 {classValues:"failure", content:"Failure: "+ txt}));
@@ -19,3 +17,5 @@ function showInfo(txt) {
   document.body.appendChild( dom.createElement("p",
 	 {classValues:"info", content:"Info: "+ txt}));
 }
+
+test.okay = true;

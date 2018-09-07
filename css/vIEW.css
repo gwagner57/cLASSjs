@@ -6,8 +6,9 @@ body {
   padding: 8px;
 }
 
-.oBJECTvIEW h1 {
+.oBJECTvIEW h2 {
   font-size: 110%;
+  margin-top: 0.2em;
 }
 table { 
   border-collapse:collapse;
@@ -21,8 +22,32 @@ table, td, th {
 thead, th {
   background: aliceblue;
 }
+
+/*
+table.RecTbl {
+  display: table;
+  width: 100%;
+}
+table.RecTbl thead {
+  display: table;
+  table-layout: fixed;
+  width: calc(100% - 16px); /* assuming scrollbar width as 16px
+}
+table.RecTbl tbody {
+  display: block;
+  width: 100%;
+  height: 10em;
+  overflow: auto;
+}
+table.RecTbl tr {
+  display: table;  /* for enabling scrolling
+  table-layout: fixed;
+  width: 100%;
+  text-align: left;
+}
+*/
 /* Center the class name of a record table widget */
-table.RecTbl>thead>tr:first-child  {
+table.RecTbl > thead > tr:first-child  {
   text-align: center;
 }
 

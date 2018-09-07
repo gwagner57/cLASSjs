@@ -2,20 +2,20 @@
  * cLASS allows defining constructor-based JavaScript classes and
  * class hierarchies based on a declarative description of the form:
  *
- *   var MyObject = new cLASS({
- *     Name: "MyObject",
- *     supertypeName: "MySuperClass",
+ *   var Student = new cLASS({
+ *     Name: "Student",
+ *     supertypeName: "Person",
  *     properties: {
- *       "myAdditionalAttribute": {range:"Integer", label:"...", max: 7, ...}
+ *       "university": {range:"String", label:"University", max: 50, ...}
  *     },
  *     methods: {
  *     }
  *   });
- *   var myObj = new MyObject({id: 1, myAdditionalAttribute: 7});
- *   // test if instance of MyObject
- *   if (myObj. .Name ==="MyObject") ...
- *   // or, alternatively,
- *   if (myObj instanceof MyObject) ...
+ *   var stud1 = new Student({id: 1, university:"MIT"});
+ *   // test if direct instance
+ *   if (stud1.constructor.Name === "Student") ...
+ *   // test if instance
+ *   if (stud1 instanceof Student) ...
  *
  * Notice that it is assumed that a class has (or inherits) an "id" attribute
  * as its standard ID attribute.
@@ -127,7 +127,7 @@ function cLASS (classSlots) {
   if (supertypeName) {
     constr.supertypeName = supertypeName;
     superclass = cLASS[supertypeName];
-    // apply classical inheritance pattern
+    // apply classical inheritance pattern for methods
     constr.prototype = Object.create( superclass.prototype);
     constr.prototype.constructor = constr;
     // merge superclass property declarations with own property declarations
@@ -142,11 +142,11 @@ function cLASS (classSlots) {
     constr.prototype.set = function ( prop, val) {
     /***************************************************/
       // this = object
-      var constrViol = cLASS.check( prop, this.constructor.properties[prop], val);
-      if (constrViol instanceof NoConstraintViolation) {
-        this[prop] = constrViol.checkedValue;
+      var validationResult = cLASS.check( prop, this.constructor.properties[prop], val);
+      if (validationResult instanceof NoConstraintViolation) {
+        this[prop] = validationResult.checkedValue;
       } else {
-        throw constrViol;
+        throw validationResult;
       }
     };
     /***************************************************/
@@ -285,10 +285,11 @@ function cLASS (classSlots) {
       return displayStr;
     };
     /***************************************************/
-    /***************************************************/
-    // A class-level de-serialization method
+
+    /***************************************************
+     * A class-level de-serialization method
+     ***************************************************/
     constr.createObjectFromRecord = function (record) {
-    /***************************************************/
       var obj={};
       try {
         obj = new constr( record);
@@ -339,6 +340,7 @@ cLASS.isIntegerType = function (T) {
   * Constants
   */
  cLASS.patterns = {
+   ID: /^([a-zA-Z0-9][a-zA-Z0-9_\-]+[a-zA-Z0-9])$/,
    // defined in WHATWG HTML5 specification
    EMAIL: /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/,
    // proposed by Diego Perini (https://gist.github.com/729294)
@@ -428,10 +430,9 @@ cLASS.isIntegerType = function (T) {
          }
        });
        break;
-     case "Identifier":
+     case "Identifier":  // add regexp test
        valuesToCheck.forEach( function (v) {
-         //TODO: add regexp test for name tokens
-         if (typeof v !== "string" || v.trim() === "") {
+         if (typeof v !== "string" || v.trim() === "" || !cLASS.patterns.ID.test( v)) {
            constrVio = new RangeConstraintViolation("Values for "+ fld +
                " must be valid identifiers/names!");
          }
@@ -716,6 +717,7 @@ cLASS.isIntegerType = function (T) {
      case "NonNegativeInteger":
      case "PositiveInteger":
      case "Number":
+     case "AutoNumber":
      case "Decimal":
      case "Percent":
      case "ClosedUnitInterval":
