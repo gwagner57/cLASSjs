@@ -34,7 +34,7 @@ const cLASSjsBrowserLibFiles = [
   "lib/dom.js",
   "src/oBJECTvIEW.js",
 
-  //"lib/xhr.js",
+  "lib/idb.js",
   "src/storage/sTORAGEmANAGER.js",
   "src/storage/sTORAGEmANAGER_IndexedDB.js"
 ];
@@ -46,7 +46,7 @@ const cLASSjsWorkerLibFiles = [
   "lib/util.js",
   "src/eNUMERATION.js",
   "src/cLASS.js",
-  //"lib/xhr.js",
+  "lib/idb.js",
   "src/storage/sTORAGEmANAGER.js",
   "src/storage/sTORAGEmANAGER_IndexedDB.js"
 ];
