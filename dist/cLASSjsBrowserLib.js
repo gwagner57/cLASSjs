@@ -3047,7 +3047,7 @@ function sTORAGEmANAGER( storageAdapter) {
       !(["LocalStorage","IndexedDB","MariaDB"].includes( storageAdapter.name))) {
     throw new ConstraintViolation("Invalid storage adapter name!");
   } else if (!storageAdapter.dbName) {
-    throw new ConstraintViolation("Storage adapter:missing DB name!");
+    throw new ConstraintViolation("Storage adapter: missing DB name!");
   } else {
     this.adapter = storageAdapter;
     // if "LocalStorage", create a main memory DB
@@ -3067,15 +3067,21 @@ function sTORAGEmANAGER( storageAdapter) {
  * Generic method for creating an empty DB
  * @method
  */
-sTORAGEmANAGER.prototype.createEmptyDb = function () {
+sTORAGEmANAGER.prototype.createEmptyDb = function (classes) {
   var adapterName = this.adapter.name,
       dbName = this.adapter.dbName;
   return new Promise( function (resolve) {
     var modelClasses=[];
-    Object.keys( cLASS).forEach( function (key) {
-      // collect all non-abstract cLASSes
-      if (cLASS[key].instances) modelClasses.push( cLASS[key]);
-    });
+    if (classes && classes.length > 0) {
+      modelClasses = classes;
+    } else {
+      Object.keys( cLASS).forEach( function (key) {
+        // collect all non-abstract cLASSes that are not datatype classes
+        if (!cLASS[key].isAbstract && !cLASS[key].isComplexDatatype) {
+          modelClasses.push( cLASS[key]);
+        }
+      });
+    }
     sTORAGEmANAGER.adapters[adapterName].createEmptyDb( dbName, modelClasses)
     .then( resolve);
   });
