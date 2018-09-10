@@ -546,7 +546,8 @@ cLASS.isIntegerType = function (T) {
        });
        break;
      default:
-       if (range instanceof eNUMERATION) {
+       if (range instanceof eNUMERATION || typeof range === "string" && eNUMERATION[range]) {
+         if (typeof range === "string") range = eNUMERATION[range];
          valuesToCheck.forEach( function (v) {
            if (!Number.isInteger( v) || v < 1 || v > range.MAX) {
              constrVio = new RangeConstraintViolation("The value "+ v +

@@ -13,7 +13,7 @@ var TextItem = new cLASS({
   Name: "TextItem",
   properties: {
     "id": {range:"Integer", label:"ID"},
-    "language": {range:"IsoLanguageCode"},
-    "Text": {range:"String"},
+    "language": {range:"IsoLanguageCodeEL"},
+    "text": {range:"String"},
   }
 });

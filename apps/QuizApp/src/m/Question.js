@@ -12,10 +12,10 @@
 let Question = new cLASS({
   Name: "Question",
   properties: {
-    "id": {range:"Integer", label:"ID"},
-    "type": {range: "questionTypeEL"},
-    "questionTextItem": {range:"Text"},
-    "hasManyCorrectAnswers": {range:"Boolean"},
-    "answerOptions": {range: "AnswerOption"}
+    "id": {range:"Integer", label:"Question ID"},
+    "type": {range: "QuestionTypeEL"},
+    "questionTextItem": {range:"TextItem"},
+    "hasManyCorrectAnswers": {range:"Boolean", isOptional: true},
+    "answerOptions": {range: "AnswerOption", maxCard: Infinity, minCard: 2, isOptional: true}
   }
 });

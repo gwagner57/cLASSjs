@@ -1,17 +1,17 @@
 
-/*Test IsoLanguageCode*/
-console.log(IsoLanguageCode.codeList["EN"]);
+/*Test IsoLanguageCodeEL*/
+console.log(IsoLanguageCodeEL.codeList["EN"]);
 
 
 /*Text TextItem*/
 let textItem = new TextItem({
   id: 1,
-  language: IsoLanguageCode.codeList["EN"],
+  language: IsoLanguageCodeEL.codeList["EN"],
   text: "How old are you?"
 });
 let textItem1 = new TextItem({
   id: 2,
-  language: IsoLanguageCode.codeList["FR"],
+  language: IsoLanguageCodeEL.codeList["FR"],
   text: "Quel âge avez-vous?"
 });
 console.log(textItem);
