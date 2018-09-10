@@ -23,6 +23,14 @@ thead, th {
   background: aliceblue;
 }
 
+/****************************************
+ Fixed-height tables with scrollable body
+ assuming scrollbar width is 16px
+
+ Issues: (1) does not scroll horizontally
+ (2) renders thead underneath tbody
+
+ ****************************************/
 /*
 table.RecTbl {
   display: table;
@@ -31,16 +39,17 @@ table.RecTbl {
 table.RecTbl thead {
   display: table;
   table-layout: fixed;
-  width: calc(100% - 16px); /* assuming scrollbar width as 16px
+  width: calc(100% - 16px);
 }
 table.RecTbl tbody {
   display: block;
-  width: 100%;
+  width: calc(100% - 16px);
   height: 10em;
   overflow: auto;
+  overflow-y: scroll;
 }
 table.RecTbl tr {
-  display: table;  /* for enabling scrolling
+  display: table;
   table-layout: fixed;
   width: 100%;
   text-align: left;

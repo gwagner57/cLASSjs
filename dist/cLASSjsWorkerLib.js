@@ -393,17 +393,40 @@ util.createRecordFromObject = function (obj) {
   }
   return record;
 };
+// create an alias for cloning records
+util.cloneRecord = util.createRecordFromObject;
+
 /**
- * Create a deep clone of a JS object
+ * Create a "deep" clone of a JS object at the level of own properties/slots
  * @param o  the object to be cloned
  * @return {object}
  */
 util.cloneObject = function (o) {
-  var clonedObj = Array.isArray(o) ? [] : {};
+  var clone = Array.isArray(o) ? [] : {};
   Object.keys(o).forEach( function (key) {
-    clonedObj[key] = (typeof o[key] === "object") ? util.cloneObject(o[key]) : o[key];
+    clone[key] = (typeof o[key] === "object") ? util.cloneObject(o[key]) : o[key];
   });
-  return clonedObj;
+  return clone;
+};
+/**
+ * Copy all own (property and method) slots of a number of (untyped) objects
+ * to a new (untyped) object.
+ * @author Gerd Wagner
+ * @return {object}  The merge result.
+ */
+util.mergeObjects = function () {
+  var i=0, k=0, obj=null, mergeObj={}, keys=[], key="";
+  for (i=0; i < arguments.length; i++) {
+    obj = arguments[i];
+    if (obj && typeof obj === "object") {
+      keys = Object.keys( obj);
+      for (k=0; k < keys.length; k++) {
+        key = keys[k];
+        mergeObj[key] = obj[key];
+      }
+    }
+  }
+  return mergeObj;
 };
 /**
  * Swap two elements of an array 
@@ -543,20 +566,20 @@ eNUMERATION.instances = {};
  * cLASS allows defining constructor-based JavaScript classes and
  * class hierarchies based on a declarative description of the form:
  *
- *   var MyObject = new cLASS({
- *     Name: "MyObject",
- *     supertypeName: "MySuperClass",
+ *   var Student = new cLASS({
+ *     Name: "Student",
+ *     supertypeName: "Person",
  *     properties: {
- *       "myAdditionalAttribute": {range:"Integer", label:"...", max: 7, ...}
+ *       "university": {range:"String", label:"University", max: 50, ...}
  *     },
  *     methods: {
  *     }
  *   });
- *   var myObj = new MyObject({id: 1, myAdditionalAttribute: 7});
- *   // test if instance of MyObject
- *   if (myObj. .Name ==="MyObject") ...
- *   // or, alternatively,
- *   if (myObj instanceof MyObject) ...
+ *   var stud1 = new Student({id: 1, university:"MIT"});
+ *   // test if direct instance
+ *   if (stud1.constructor.Name === "Student") ...
+ *   // test if instance
+ *   if (stud1 instanceof Student) ...
  *
  * Notice that it is assumed that a class has (or inherits) an "id" attribute
  * as its standard ID attribute.
@@ -653,8 +676,8 @@ function cLASS (classSlots) {
         this[f] = instanceSlots[f];
       }, this);
     }
-    // is the class not abstract and does the object have an ID slot?
-    if (!classSlots.isAbstract && "id" in this) {
+    // is the class neither a complex DT nor abstract and does the object have an ID slot?
+    if (!classSlots.isComplexDatatype && !classSlots.isAbstract && "id" in this) {
       // add new object to the population/extension of the class
       cLASS[classSlots.Name].instances[String(this.id)] = this;
     }
@@ -662,12 +685,13 @@ function cLASS (classSlots) {
   // assign class-level (meta-)properties
   constr.constructor = cLASS;
   constr.Name = classSlots.Name;
+  if (classSlots.isComplexDatatype) constr.isComplexDatatype = true;
   if (classSlots.isAbstract) constr.isAbstract = true;
   if (classSlots.shortLabel) constr.shortLabel = classSlots.shortLabel;
   if (supertypeName) {
     constr.supertypeName = supertypeName;
     superclass = cLASS[supertypeName];
-    // apply classical inheritance pattern
+    // apply classical inheritance pattern for methods
     constr.prototype = Object.create( superclass.prototype);
     constr.prototype.constructor = constr;
     // merge superclass property declarations with own property declarations
@@ -682,11 +706,11 @@ function cLASS (classSlots) {
     constr.prototype.set = function ( prop, val) {
     /***************************************************/
       // this = object
-      var constrViol = cLASS.check( prop, this.constructor.properties[prop], val);
-      if (constrViol instanceof NoConstraintViolation) {
-        this[prop] = constrViol.checkedValue;
+      var validationResult = cLASS.check( prop, this.constructor.properties[prop], val);
+      if (validationResult instanceof NoConstraintViolation) {
+        this[prop] = validationResult.checkedValue;
       } else {
-        throw constrViol;
+        throw validationResult;
       }
     };
     /***************************************************/
@@ -742,7 +766,7 @@ function cLASS (classSlots) {
             if (range.constructor && range.constructor === cLASS) { // object reference(s)
               if (Array.isArray( val)) {
                 valuesToConvert = val.slice(0);  // clone;
-              } else {  // map from ID refs to obj refs
+              } else {  // val is a map from ID refs to obj refs
                 valuesToConvert = Object.values( val);
               }
             } else if (Array.isArray( val)) {
@@ -788,10 +812,12 @@ function cLASS (classSlots) {
         if (Array.isArray( val)) {
           valuesToConvert = val.slice(0);  // clone;
         } else console.log("The value of a multi-valued " +
-            "datatype property must be an array!");
+            "datatype property like "+ prop +"must be an array!");
       } else valuesToConvert = [val];
       valuesToConvert.forEach( function (v,i) {
-        if (eNUMERATION && range instanceof eNUMERATION) {
+        if (typeof propDecl.val2str === "function") {
+          valuesToConvert[i] = propDecl.val2str( v);
+        } else if (eNUMERATION && range instanceof eNUMERATION) {
           valuesToConvert[i] = range.labels[v-1];
         } else if (["number","string","boolean"].includes( typeof v) || !v) {
           valuesToConvert[i] = String( v);
@@ -800,13 +826,18 @@ function cLASS (classSlots) {
         } else if (Array.isArray( v)) {  // JSON-compatible array
           valuesToConvert[i] = v.slice(0);  // clone
         } else if (typeof range === "string" && cLASS[range]) {
-          if (typeof val === "object" && val.id !== undefined) {
-            valuesToConvert[i] = val.id;
+          if (typeof v === "object" && v.id !== undefined) {
+            valuesToConvert[i] = v.id;
           } else {
-            valuesToConvert[i] = "";
+            valuesToConvert[i] = v.toString();
+            propDecl.stringified = true;
+            console.log("Property "+ this.constructor.Name +"::"+ prop +" has a cLASS object value without an 'id' slot!");
           }
-        } else valuesToConvert[i] = JSON.stringify( v);
-      });
+        } else {
+          valuesToConvert[i] = JSON.stringify( v);
+          propDecl.stringified = true;
+        }
+      }, this);
       displayStr = valuesToConvert[0];
       if (propDecl.maxCard && propDecl.maxCard > 1) {
         displayStr = "[" + displayStr;
@@ -818,10 +849,11 @@ function cLASS (classSlots) {
       return displayStr;
     };
     /***************************************************/
-    /***************************************************/
-    // A class-level de-serialization method
+
+    /***************************************************
+     * A class-level de-serialization method
+     ***************************************************/
     constr.createObjectFromRecord = function (record) {
-    /***************************************************/
       var obj={};
       try {
         obj = new constr( record);
@@ -872,6 +904,7 @@ cLASS.isIntegerType = function (T) {
   * Constants
   */
  cLASS.patterns = {
+   ID: /^([a-zA-Z0-9][a-zA-Z0-9_\-]+[a-zA-Z0-9])$/,
    // defined in WHATWG HTML5 specification
    EMAIL: /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/,
    // proposed by Diego Perini (https://gist.github.com/729294)
@@ -961,6 +994,14 @@ cLASS.isIntegerType = function (T) {
          }
        });
        break;
+     case "Identifier":  // add regexp test
+       valuesToCheck.forEach( function (v) {
+         if (typeof v !== "string" || v.trim() === "" || !cLASS.patterns.ID.test( v)) {
+           constrVio = new RangeConstraintViolation("Values for "+ fld +
+               " must be valid identifiers/names!");
+         }
+       });
+       break;
      case "Email":
        valuesToCheck.forEach( function (v) {
          if (typeof v !== "string" || !cLASS.patterns.EMAIL.test( v)) {
@@ -1001,6 +1042,7 @@ cLASS.isIntegerType = function (T) {
          }
        });
        break;
+     case "AutoNumber":
      case "PositiveInteger":
        valuesToCheck.forEach( function (v) {
          if (!Number.isInteger(v) || v < 1) {
@@ -1104,7 +1146,21 @@ cLASS.isIntegerType = function (T) {
                        " must be an array of length " + range.size + "! " + JSON.stringify(v) + " is not admissible!");
                    break;
                  }
-                 for (i = 0; i < range.size; i++) {
+                 for (i = 0; i < v.length; i++) {
+                   if (!cLASS.isOfType(v[i], range.itemType)) {
+                     constrVio = new RangeConstraintViolation("The items of " + fld +
+                         " must be of type " + range.itemType + "! " + JSON.stringify(v) +
+                         " is not admissible!");
+                   }
+                 }
+                 break;
+               case "ArrayList":
+                 if (!Array.isArray(v)) {
+                   constrVio = new RangeConstraintViolation("The value of " + fld +
+                       " must be an array! " + JSON.stringify(v) + " is not admissible!");
+                   break;
+                 }
+                 for (i = 0; i < v.length; i++) {
                    if (!cLASS.isOfType(v[i], range.itemType)) {
                      constrVio = new RangeConstraintViolation("The items of " + fld +
                          " must be of type " + range.itemType + "! " + JSON.stringify(v) +
@@ -1225,6 +1281,7 @@ cLASS.isIntegerType = function (T) {
      case "NonNegativeInteger":
      case "PositiveInteger":
      case "Number":
+     case "AutoNumber":
      case "Decimal":
      case "Percent":
      case "ClosedUnitInterval":
@@ -1372,115 +1429,6 @@ cLASS.RingBuffer.prototype.toString = function (n) {
    return sum / N;
  };
 
- /**
- * @fileOverview  A library of XHR-based HTTP messaging methods.
- *                It uses JS Promises in the underlayer.
- * @author Gerd Wagner
- * @copyright Copyright 2015 Gerd Wagner, Chair of Internet Technology,
- *   Brandenburg University of Technology, Germany.
- * @license The MIT License (MIT)
- */
-var xhr = {
-  URL_PATTERN: /\b(https?):\/\/[\-A-Za-z0-9+&@#\/%?=~_|!:,.;]*[\-A-Za-z0-9+&@#\/%=~_|??]/,
-  /**
-   * Default response handler, used if 
-   * a custom one is not provided by the caller 
-   * of GET, PUT, POST, DELETE or OPTIONS.
-   */
-  defaultResponseHandler: function(rsp) {
-    if (rsp.status === 200 || rsp.status === 201 || rsp.status === 304) 
-      console.log("Response: " + rsp.responseText); 
-     else console.log("Error " + rsp.status +": "+ rsp.statusText);
-   },
-  /**
-   * Utility method encapsulating common code 
-   * required to initiate the specific XHR request.
-   */
-  initiateRequest: function (params, type) {
-    params.method = type;
-    if (typeof params.handleResponse !== "function")
-      params.handleResponse = xhr.defaultResponseHandler;
-    xhr.makeRequest( params)
-    .then(function (p) {params.handleResponse(p)})
-    .catch(function (e) {console.log(e)});
-  },
-  /**
-   * Make an XHR GET request
-   * @param params  Contains parameter slots
-   */
-  OPTIONS: function (params) {
-    xhr.initiateRequest(params, "OPTIONS");
-  },
-  /**
-   * Make an XHR GET request
-   * @param params  Contains parameter slots
-   */
-  GET: function (params) {
-    xhr.initiateRequest(params, "GET");
-  },
-  /**
-   * Make an XHR POST request
-   * @param params  Contains parameter slots
-   */
-  POST: function (params) {
-    xhr.initiateRequest(params, "POST");
-  },
-  /**
-   * Make an XHR PUT request
-   * @param params  Contains parameter slots
-   */
-  PUT: function (params) {
-    xhr.initiateRequest(params, "PUT");
-  },
-  /**
-   * Make an XHR DELETE request
-   * @param params  Contains parameter slots
-   */
-  DELETE: function (params) {
-    xhr.initiateRequest(params, "DELETE");
-  },
-  /**
-   * Make an XHR request
-   * @param {{method: string?, url: string, 
-   *          reqFormat: string?, respFormat: string?,
-   *          handleResponse: function?,
-   *          requestHeaders: Map?}
-   *        } params  The parameter slots.
-   */
-  makeRequest: function (params) {
-    return new Promise(function(resolve, reject) {
-      var req=null, url="", method="",
-          reqFormat="", respFormat="";
-      if (!params.url) {
-        reject(new Error("Missing value for url parameter in XHR GET request!"));
-      } else if (!xhr.URL_PATTERN.test( params.url)) {
-        reject(new Error("Invalid URL in XHR GET request!"));    
-      } else {
-        url = params.url;
-        req = new XMLHttpRequest();
-        method = (params.method) ? params.method : "GET";  // default
-        reqFormat = (params.reqFormat) ? params.reqFormat : 
-            "application/x-www-form-urlencoded";  // default
-        respFormat = (params.respFormat) ? params.respFormat : "application/json";  // default
-      }
-      req.open( method, url, true);
-      req.onload = function (e) {resolve(e.target);};
-      req.onerror = reject;
-      if (params.requestHeaders) {
-        Object.keys( params.requestHeaders).forEach( function (rH) {
-          req.setRequestHeader( rH, params.requestHeaders[rH]);
-        });
-      }
-      req.setRequestHeader("Accept", respFormat);
-      if (method === "GET" || method === "DELETE") {
-        req.send("");
-      } else {  // POST and PUT
-        req.setRequestHeader("Content-Type", reqFormat);
-        req.send( params.msgBody);
-      }
-    });
-  }
-};
 /**
  * @fileOverview  This file contains the definition of the library class
  * sTORAGEmANAGER.
@@ -1917,5 +1865,148 @@ sTORAGEmANAGER.adapters["LocalStorage"] = {
         }
       }
     });
+  }
+};
+/**
+ * @fileOverview  Storage management methods for the "IndexedDB" adapter
+ * @author Gerd Wagner
+ * @copyright Copyright 2017 Gerd Wagner, Chair of Internet Technology,
+ *   Brandenburg University of Technology, Germany.
+ * @license The MIT License (MIT)
+ */
+sTORAGEmANAGER.adapters["IndexedDB"] = {
+  //------------------------------------------------
+  createEmptyDb: function (dbName, modelClasses) {
+  //------------------------------------------------
+    return new Promise( function (resolve) {
+      idb.open( dbName, 1, function (upgradeDb) {
+        modelClasses.forEach( function (mc) {
+          var tableName = util.class2TableName( mc.Name);
+          if (!upgradeDb.objectStoreNames.contains( tableName)) {
+            upgradeDb.createObjectStore( tableName, {keyPath:"id"});
+            // possibly create autoIncrement standard ID attributes
+          }
+        })
+      }).then( resolve);
+    });
+  },
+  //------------------------------------------------
+  add: function (dbName, mc, records) {
+  //------------------------------------------------
+    return new Promise( function (resolve, reject) {
+      var tableName = util.class2TableName( mc.Name);
+      idb.open( dbName).then( function (idbCx) {  // idbCx is a DB connection
+        var tx = idbCx.transaction( tableName, "readwrite");
+        var os = tx.objectStore( tableName);
+        if (!Array.isArray( records)) {  // single record insertion
+          records = [records];
+        }
+        // Promise.all takes a list of promises and resolves if all of them do
+        return Promise.all( records.map( function (rec) {return os.add( rec);}))
+            .then( function () {return tx.complete;});
+      }).then( resolve)
+      .catch( function (err) {
+        reject( err);
+      });
+    });
+  },
+  //------------------------------------------------
+  retrieve: function (dbName, mc, id) {
+  //------------------------------------------------
+    return new Promise( function (resolve) {
+      var tableName = util.class2TableName( mc.Name);
+      idb.open( dbName).then( function (idbCx) {  // idbCx is a DB connection
+        var tx = idbCx.transaction( tableName, "readonly");
+        var os = tx.objectStore( tableName);
+        return os.get( id);
+      }).catch( function (err) {
+        console.log( err);
+      }).then( function( result) {
+        if (result === undefined) result = null;
+        resolve( result);
+      });
+    });
+  },
+  //------------------------------------------------
+  retrieveAll: function (dbName, mc) {
+  //------------------------------------------------
+    return new Promise( function (resolve) {
+      var tableName = util.class2TableName( mc.Name);
+      idb.open( dbName).then( function (idbCx) {  // idbCx is a DB connection
+        var tx = idbCx.transaction( tableName, "readonly");
+        var os = tx.objectStore( tableName);
+        return os.getAll();
+      }).catch( function (err) {
+        console.log( err);
+      }).then( function( results) {
+        if (results === undefined) results = [];
+        resolve( results);
+      });
+    });
+  },
+  //------------------------------------------------
+  update: function (dbName, mc, id, slots) {
+  //------------------------------------------------
+    return new Promise( function (resolve) {
+      var tableName = util.class2TableName( mc.Name);
+      idb.open( dbName).then( function (idbCx) {  // idbCx is a DB connection
+        var tx = idbCx.transaction( tableName, "readwrite");
+        var os = tx.objectStore( tableName);
+        slots["id"] = id;
+        os.put( slots);
+        return tx.complete;
+      }).catch( function (err) {
+        console.log( err);
+      }).then( resolve);
+    });
+  },
+  //------------------------------------------------
+  destroy: function (dbName, mc, id) {
+  //------------------------------------------------
+    return new Promise( function (resolve) {
+      var tableName = util.class2TableName( mc.Name);
+      idb.open( dbName).then( function (idbCx) {  // idbCx is a DB connection
+        var tx = idbCx.transaction( tableName, "readwrite");
+        var os = tx.objectStore( tableName);
+        os.delete( id);
+        return tx.complete;
+      }).catch( function (err) {
+        console.log( err);
+      }).then( resolve);
+    });
+  },
+  //------------------------------------------------
+  clearTable: function (dbName, mc) {
+  //------------------------------------------------
+    return new Promise( function (resolve) {
+      var tableName = util.class2TableName( mc.Name);
+      idb.open( dbName).then( function (idbCx) {  // idbCx is a DB connection
+        var tx = idbCx.transaction( tableName, "readwrite");
+        var os = tx.objectStore( tableName);
+        os.clear();
+        return tx.complete;
+      }).catch( function (err) {
+        console.log( err);
+      }).then( resolve);
+    });
+  },
+  //------------------------------------------------
+  clearDB: function (dbName) {
+  //------------------------------------------------
+    return new Promise( function (resolve) {
+      idb.open( dbName).then( function (idbCx) {  // idbCx is a DB connection
+        var tx = idbCx.transaction( idbCx.objectStoreNames, "readwrite");
+        // Promise.all takes a list of promises and resolves if all of them do
+        return Promise.all( Array.from( idbCx.objectStoreNames,
+            function (osName) {return tx.objectStore( osName).clear();}))
+            .then( function () {return tx.complete;});
+      }).catch( function (err) {
+        console.log( err);
+      }).then( resolve);
+    });
+  },
+  //------------------------------------------------
+  saveOnUnload: function (dbName) {  // not yet implemented
+  //------------------------------------------------
   }
 };

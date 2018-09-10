@@ -615,7 +615,7 @@ oBJECTvIEW.createRecordTableWidget = function (slots) {
   // convert cLASS name to cLASS object reference
   if (typeof slots.type === "string" && cLASS[slots.type]) {
     Class = cLASS[slots.type];
-  } else if (typeof slots.type === "object" && slots.type.constructor === cLASS) {
+  } else if (slots.type.constructor === cLASS) {
     Class = slots.type;
   } else {
     throw Error("No cLASS type provided when calling 'createRecordTableWidget'!")

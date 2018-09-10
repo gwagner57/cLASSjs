@@ -393,17 +393,40 @@ util.createRecordFromObject = function (obj) {
   }
   return record;
 };
+// create an alias for cloning records
+util.cloneRecord = util.createRecordFromObject;
+
 /**
- * Create a deep clone of a JS object
+ * Create a "deep" clone of a JS object at the level of own properties/slots
  * @param o  the object to be cloned
  * @return {object}
  */
 util.cloneObject = function (o) {
-  var clonedObj = Array.isArray(o) ? [] : {};
+  var clone = Array.isArray(o) ? [] : {};
   Object.keys(o).forEach( function (key) {
-    clonedObj[key] = (typeof o[key] === "object") ? util.cloneObject(o[key]) : o[key];
+    clone[key] = (typeof o[key] === "object") ? util.cloneObject(o[key]) : o[key];
   });
-  return clonedObj;
+  return clone;
+};
+/**
+ * Copy all own (property and method) slots of a number of (untyped) objects
+ * to a new (untyped) object.
+ * @author Gerd Wagner
+ * @return {object}  The merge result.
+ */
+util.mergeObjects = function () {
+  var i=0, k=0, obj=null, mergeObj={}, keys=[], key="";
+  for (i=0; i < arguments.length; i++) {
+    obj = arguments[i];
+    if (obj && typeof obj === "object") {
+      keys = Object.keys( obj);
+      for (k=0; k < keys.length; k++) {
+        key = keys[k];
+        mergeObj[key] = obj[key];
+      }
+    }
+  }
+  return mergeObj;
 };
 /**
  * Swap two elements of an array 
@@ -543,20 +566,20 @@ eNUMERATION.instances = {};
  * cLASS allows defining constructor-based JavaScript classes and
  * class hierarchies based on a declarative description of the form:
  *
- *   var MyObject = new cLASS({
- *     Name: "MyObject",
- *     supertypeName: "MySuperClass",
+ *   var Student = new cLASS({
+ *     Name: "Student",
+ *     supertypeName: "Person",
  *     properties: {
- *       "myAdditionalAttribute": {range:"Integer", label:"...", max: 7, ...}
+ *       "university": {range:"String", label:"University", max: 50, ...}
  *     },
  *     methods: {
  *     }
  *   });
- *   var myObj = new MyObject({id: 1, myAdditionalAttribute: 7});
- *   // test if instance of MyObject
- *   if (myObj. .Name ==="MyObject") ...
- *   // or, alternatively,
- *   if (myObj instanceof MyObject) ...
+ *   var stud1 = new Student({id: 1, university:"MIT"});
+ *   // test if direct instance
+ *   if (stud1.constructor.Name === "Student") ...
+ *   // test if instance
+ *   if (stud1 instanceof Student) ...
  *
  * Notice that it is assumed that a class has (or inherits) an "id" attribute
  * as its standard ID attribute.
@@ -653,8 +676,8 @@ function cLASS (classSlots) {
         this[f] = instanceSlots[f];
       }, this);
     }
-    // is the class not abstract and does the object have an ID slot?
-    if (!classSlots.isAbstract && "id" in this) {
+    // is the class neither a complex DT nor abstract and does the object have an ID slot?
+    if (!classSlots.isComplexDatatype && !classSlots.isAbstract && "id" in this) {
       // add new object to the population/extension of the class
       cLASS[classSlots.Name].instances[String(this.id)] = this;
     }
@@ -662,12 +685,13 @@ function cLASS (classSlots) {
   // assign class-level (meta-)properties
   constr.constructor = cLASS;
   constr.Name = classSlots.Name;
+  if (classSlots.isComplexDatatype) constr.isComplexDatatype = true;
   if (classSlots.isAbstract) constr.isAbstract = true;
   if (classSlots.shortLabel) constr.shortLabel = classSlots.shortLabel;
   if (supertypeName) {
     constr.supertypeName = supertypeName;
     superclass = cLASS[supertypeName];
-    // apply classical inheritance pattern
+    // apply classical inheritance pattern for methods
     constr.prototype = Object.create( superclass.prototype);
     constr.prototype.constructor = constr;
     // merge superclass property declarations with own property declarations
@@ -682,11 +706,11 @@ function cLASS (classSlots) {
     constr.prototype.set = function ( prop, val) {
     /***************************************************/
       // this = object
-      var constrViol = cLASS.check( prop, this.constructor.properties[prop], val);
-      if (constrViol instanceof NoConstraintViolation) {
-        this[prop] = constrViol.checkedValue;
+      var validationResult = cLASS.check( prop, this.constructor.properties[prop], val);
+      if (validationResult instanceof NoConstraintViolation) {
+        this[prop] = validationResult.checkedValue;
       } else {
-        throw constrViol;
+        throw validationResult;
       }
     };
     /***************************************************/
@@ -742,7 +766,7 @@ function cLASS (classSlots) {
             if (range.constructor && range.constructor === cLASS) { // object reference(s)
               if (Array.isArray( val)) {
                 valuesToConvert = val.slice(0);  // clone;
-              } else {  // map from ID refs to obj refs
+              } else {  // val is a map from ID refs to obj refs
                 valuesToConvert = Object.values( val);
               }
             } else if (Array.isArray( val)) {
@@ -788,10 +812,12 @@ function cLASS (classSlots) {
         if (Array.isArray( val)) {
           valuesToConvert = val.slice(0);  // clone;
         } else console.log("The value of a multi-valued " +
-            "datatype property must be an array!");
+            "datatype property like "+ prop +"must be an array!");
       } else valuesToConvert = [val];
       valuesToConvert.forEach( function (v,i) {
-        if (eNUMERATION && range instanceof eNUMERATION) {
+        if (typeof propDecl.val2str === "function") {
+          valuesToConvert[i] = propDecl.val2str( v);
+        } else if (eNUMERATION && range instanceof eNUMERATION) {
           valuesToConvert[i] = range.labels[v-1];
         } else if (["number","string","boolean"].includes( typeof v) || !v) {
           valuesToConvert[i] = String( v);
@@ -800,13 +826,18 @@ function cLASS (classSlots) {
         } else if (Array.isArray( v)) {  // JSON-compatible array
           valuesToConvert[i] = v.slice(0);  // clone
         } else if (typeof range === "string" && cLASS[range]) {
-          if (typeof val === "object" && val.id !== undefined) {
-            valuesToConvert[i] = val.id;
+          if (typeof v === "object" && v.id !== undefined) {
+            valuesToConvert[i] = v.id;
           } else {
-            valuesToConvert[i] = "";
+            valuesToConvert[i] = v.toString();
+            propDecl.stringified = true;
+            console.log("Property "+ this.constructor.Name +"::"+ prop +" has a cLASS object value without an 'id' slot!");
           }
-        } else valuesToConvert[i] = JSON.stringify( v);
-      });
+        } else {
+          valuesToConvert[i] = JSON.stringify( v);
+          propDecl.stringified = true;
+        }
+      }, this);
       displayStr = valuesToConvert[0];
       if (propDecl.maxCard && propDecl.maxCard > 1) {
         displayStr = "[" + displayStr;
@@ -818,10 +849,11 @@ function cLASS (classSlots) {
       return displayStr;
     };
     /***************************************************/
-    /***************************************************/
-    // A class-level de-serialization method
+
+    /***************************************************
+     * A class-level de-serialization method
+     ***************************************************/
     constr.createObjectFromRecord = function (record) {
-    /***************************************************/
       var obj={};
       try {
         obj = new constr( record);
@@ -872,6 +904,7 @@ cLASS.isIntegerType = function (T) {
   * Constants
   */
  cLASS.patterns = {
+   ID: /^([a-zA-Z0-9][a-zA-Z0-9_\-]+[a-zA-Z0-9])$/,
    // defined in WHATWG HTML5 specification
    EMAIL: /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/,
    // proposed by Diego Perini (https://gist.github.com/729294)
@@ -961,6 +994,14 @@ cLASS.isIntegerType = function (T) {
          }
        });
        break;
+     case "Identifier":  // add regexp test
+       valuesToCheck.forEach( function (v) {
+         if (typeof v !== "string" || v.trim() === "" || !cLASS.patterns.ID.test( v)) {
+           constrVio = new RangeConstraintViolation("Values for "+ fld +
+               " must be valid identifiers/names!");
+         }
+       });
+       break;
      case "Email":
        valuesToCheck.forEach( function (v) {
          if (typeof v !== "string" || !cLASS.patterns.EMAIL.test( v)) {
@@ -1001,6 +1042,7 @@ cLASS.isIntegerType = function (T) {
          }
        });
        break;
+     case "AutoNumber":
      case "PositiveInteger":
        valuesToCheck.forEach( function (v) {
          if (!Number.isInteger(v) || v < 1) {
@@ -1104,7 +1146,21 @@ cLASS.isIntegerType = function (T) {
                        " must be an array of length " + range.size + "! " + JSON.stringify(v) + " is not admissible!");
                    break;
                  }
-                 for (i = 0; i < range.size; i++) {
+                 for (i = 0; i < v.length; i++) {
+                   if (!cLASS.isOfType(v[i], range.itemType)) {
+                     constrVio = new RangeConstraintViolation("The items of " + fld +
+                         " must be of type " + range.itemType + "! " + JSON.stringify(v) +
+                         " is not admissible!");
+                   }
+                 }
+                 break;
+               case "ArrayList":
+                 if (!Array.isArray(v)) {
+                   constrVio = new RangeConstraintViolation("The value of " + fld +
+                       " must be an array! " + JSON.stringify(v) + " is not admissible!");
+                   break;
+                 }
+                 for (i = 0; i < v.length; i++) {
                    if (!cLASS.isOfType(v[i], range.itemType)) {
                      constrVio = new RangeConstraintViolation("The items of " + fld +
                          " must be of type " + range.itemType + "! " + JSON.stringify(v) +
@@ -1225,6 +1281,7 @@ cLASS.isIntegerType = function (T) {
      case "NonNegativeInteger":
      case "PositiveInteger":
      case "Number":
+     case "AutoNumber":
      case "Decimal":
      case "Percent":
      case "ClosedUnitInterval":
@@ -1392,7 +1449,9 @@ var dom = {
     if (slots) {
       if (slots.id) el.id = slots.id;
       if (slots.classValues) el.className = slots.classValues;
+      if (slots.title) el.title = slots.title;
       if (slots.content) el.innerHTML = slots.content;
+      if (slots.borderColor) el.style.borderColor = slots.borderColor;
     }
     return el;
   },
@@ -1774,13 +1833,17 @@ var oBJECTvIEW = function (slots) {
           }
           if (this.suppressNoValueFields && mo[fld] === undefined) continue;
           // else
-          this.fields[fld] = {
-            moName: mo.objectName,
-            label: properties[fld].label,
-            hint: properties[fld].hint,
-            range: properties[fld].range,
-            inputOutputMode:"I/O"
-          };
+          this.fields[fld] = util.cloneRecord( properties[fld]);
+          // in case range is a JS constructor function or object
+          if (typeof properties[fld].range !== "string") {
+            if (cLASS[properties[fld].range.Name]) {
+              this.fields[fld].range = properties[fld].range.Name;
+            } else {
+              this.fields[fld].range = properties[fld].range;
+            }
+          }
+          this.fields[fld].moName = mo.objectName;
+          this.fields[fld].inputOutputMode = "I/O";
           fldOrdEl.push( fld);
         } else if (typeof fld === "object") {  // field definition
           properties = this.modelObject.properties;
@@ -1887,7 +1950,7 @@ var oBJECTvIEW = function (slots) {
  * @return {object} dataBinding
  */
 oBJECTvIEW.maxCardButtonGroup = 7;
-oBJECTvIEW.prototype.render = function (parentEl) {
+oBJECTvIEW.prototype.render = function (objViewParentEl) {
   var fields = this.fields,  // fields map
       fieldOrder = this.fieldOrder,  // field order array
       mObject = this.modelObject,  // model object
@@ -1896,7 +1959,7 @@ oBJECTvIEW.prototype.render = function (parentEl) {
       dataBinding = {},
       userActions = this.userActions,
       validateOnInput = true,
-      fldGrpSep = this.fieldGroupSeparator,
+      uiElemType = "form", parentEl=null,
       maxELforButton = 7,
       uiContainerEl=null, footerEl=null, i=0;
   /* ==================================================================== */
@@ -2080,6 +2143,8 @@ oBJECTvIEW.prototype.render = function (parentEl) {
           range = fDef.range,
           isEnum = range instanceof eNUMERATION,
           isArr = Array.isArray( range);
+      // convert cLASS Name to cLASS object
+      if (typeof range === "string" && cLASS[range]) range = cLASS[range];
       // retrieve model object for views based on multiple model objects
       if (mObjects) mObject = mObjects[fDef.moName];
       if (isEnum || isArr) {  // (ad-hoc) enumeration
@@ -2090,6 +2155,12 @@ oBJECTvIEW.prototype.render = function (parentEl) {
         } else {
           if (!containerEl.className) containerEl.className = "select";
           containerEl.appendChild( createSelectionList( fld));
+        }
+      } else if (range && range.constructor === cLASS && range.isComplexDatatype) {
+        if (fDef.maxCard && fDef.maxCard > 1) {
+          if (!containerEl.className) containerEl.className = "RecordTableWidget";
+          containerEl.appendChild( oBJECTvIEW.createRecordTableWidget(
+              {type: range, records: mObject[fld], tableTitle: fDef.label}));
         }
       } else if (range === "Boolean") {
         if (!containerEl.className) containerEl.className = "yes-no-field";
@@ -2131,35 +2202,52 @@ oBJECTvIEW.prototype.render = function (parentEl) {
       classValues:"action-group"
     });
     Object.keys( userActions).forEach( function (usrAct) {
-      containerEl.appendChild( dom.createButton({
-        name: usrAct,
-        label: userActions[usrAct].label || util.capitalizeFirstChar( usrAct),
-        handler: userActions[usrAct]
-      }));
-      parentEl.appendChild( containerEl);
+      var renderActBtn = typeof userActions[usrAct].showCondition !== "function" ||
+          userActions[usrAct].showCondition();
+      if (renderActBtn) {
+        containerEl.appendChild( dom.createButton({
+          name: usrAct,
+          label: userActions[usrAct].label || util.capitalizeFirstChar( usrAct),
+          handler: userActions[usrAct]
+        }));
+        parentEl.appendChild( containerEl);
+      }
     });
   }
   /* ==================================================================== */
   /* MAIN CODE of render                                                  */
   /* ==================================================================== */
+  // check if objView is descendant of a "form" element
+  parentEl = objViewParentEl;
+  while (parentEl && parentEl.tagName !== "BODY") {
+    if (parentEl.tagName === "FORM") {
+      uiElemType = "div";
+      break;
+    } else {
+      parentEl = parentEl.parentElement;
+    }
+  }
   uiContainerEl = dom.createElement(
-      !parentEl ? "form":"div", {id: this.modelObject ? this.modelObject.objectName :
-            Object.keys( this.modelObjects)[0]});
+    uiElemType,
+    {id: this.modelObject ?
+         this.modelObject.objectName : Object.keys( this.modelObjects)[0],
+     classValues:"oBJECTvIEW"}
+   );
   if (this.heading) {
     uiContainerEl.appendChild( dom.createElement("h2", {content:this.heading}));
   }
   // store the object view's DOM element
   this.domElem = uiContainerEl;
-  if (!parentEl) parentEl = document.querySelector("#uiContainerEl");
-  if (!parentEl) {
-    parentEl = document.body;
+  if (!objViewParentEl) objViewParentEl = document.querySelector("#uiContainerEl");
+  if (!objViewParentEl) {
+    objViewParentEl = document.body;
     footerEl = document.querySelector("html>body>footer");
     if (footerEl) {
       document.body.insertBefore( uiContainerEl, footerEl);
     } else {
       document.body.appendChild( uiContainerEl);
     }
-  } else parentEl.appendChild( uiContainerEl);
+  } else objViewParentEl.appendChild( uiContainerEl);
   if (uiContainerEl.tagName === "FORM") {  // reset custom validity
     for (i=0; i < uiContainerEl.elements.length; i++) {
       uiContainerEl.elements[i].setCustomValidity("");
@@ -2173,86 +2261,137 @@ oBJECTvIEW.prototype.render = function (parentEl) {
   return dataBinding;  // a map of field names to corresponding DOM elements 
 };
 /**
- * Set up a tabular UI for defining the objects/population of a given cLASS
+ * Set up a tabular UI for defining/editing entity records of a given
+ * entity type or data records of a given complex datatype
  * @author Gerd Wagner
  * @method
- * @return {object} classPopulationUI
+ * @param slots.type  a cLASS
+ * @param slots.records?  a collection (array list or map) of records
+ * @return {object}  the created DOM element object
  */
-oBJECTvIEW.createClassPopulationWidget = function (Class, editableProperties) {
-  var popTableEl = dom.createElement("table", {
-    id: Class.Name + "-PopTable",
-    classValues: "PopTable"
+oBJECTvIEW.createRecordTableWidget = function (slots) {
+  var tableEl = dom.createElement("table", {classValues: "RecTbl"});
+  var headerRowEl=null, cell=null, rowIdx=0, obj=null, rowEl=null, N=0,
+      rowObjects=[], colProperties=[],  colHeadings=[], colTypes=[],
+      maxNmrOfRows = slots.maxNmrOfRows || 13,  // default is 13
+      tBody = document.createElement("tBody"),
+      Class=null, propDefs=null, tableTitle = "",
+      keys=[], records=null, nmrOfRecords=0, p="";
+  if (!slots.type) {
+    throw Error("No type provided when calling 'createRecordTableWidget'!")
+  }
+  // convert cLASS name to cLASS object reference
+  if (typeof slots.type === "string" && cLASS[slots.type]) {
+    Class = cLASS[slots.type];
+  } else if (slots.type.constructor === cLASS) {
+    Class = slots.type;
+  } else {
+    throw Error("No cLASS type provided when calling 'createRecordTableWidget'!")
+  }
+  propDefs = Class.properties;
+  tableEl.appendChild( tBody);
+  tableTitle = slots.tableTitle || Class.label || Class.Name;
+  if (!Class.isComplexDatatype) {
+    if (slots.editableProperties) colProperties = slots.editableProperties;
+    records = slots.records || Class.instances;
+    keys = Object.keys( records);
+    nmrOfRecords = keys.length;
+  } else if (Array.isArray( slots.records)) {
+    records = slots.records || [];
+    nmrOfRecords = records.length;
+  } else if (typeof slots.records === "object") { // a map
+    records = slots.records || {};
+    keys = Object.keys( records);
+    nmrOfRecords = keys.length;
+  }
+  if (propDefs.id) {
+    if (propDefs.name) colHeadings[0] = "ID/Name";
+    else colHeadings[0] = "ID";
+  } else if (propDefs.name) {
+    colHeadings[0] = "Name";
+  }
+  // loop over all property definitions (including inherited ones)
+  for (p in propDefs) {
+    if (p !== "id" && p !== "name" && propDefs[p].label) {
+      colProperties.push( p);
+      colHeadings.push( propDefs[p].label);
+      colTypes.push( propDefs[p].range);
+    }
+  }
+  // store properties displayed in table  TODO: currently not used...
+  tableEl.setAttribute("data-properties", colProperties.join(" "));
+  // create table heading
+  tableEl.appendChild( document.createElement("thead"));
+  // create row for table name
+  headerRowEl = tableEl.tHead.insertRow();
+  cell = headerRowEl.insertCell();
+  cell.textContent = tableTitle;
+  cell.colSpan = colHeadings.length;
+  // create row for column names
+  headerRowEl = tableEl.tHead.insertRow();
+  // create table column headings
+  colHeadings.forEach( function (cH) {
+    var c = headerRowEl.insertCell();
+    c.textContent = cH;
   });
-  var headerRowEl=null, cell=null,
-      tBody = document.createElement("tBody");
-  var rowObjects=[], columnProperties=[];  // for mapping table cells to object slots
-  if (editableProperties) columnProperties = editableProperties;
-  else {
-    Object.keys( Class.properties).forEach( function (p) {
-      if (p !== "id" && p !== "name") columnProperties.push( p);
+  // create table rows
+  N = Math.min( nmrOfRecords, maxNmrOfRows);
+  for (rowIdx=0; rowIdx < N; rowIdx++) {
+    obj = keys.length>0 ? records[keys[rowIdx]] : records[rowIdx];
+    rowEl = tBody.insertRow();
+    // create object row
+    rowObjects[rowIdx] = obj;
+    if (obj.id) {
+      rowEl.insertCell().textContent = obj.name ? obj.id +" / "+ obj.name : obj.id;
+    } else if (obj.name) {
+      rowEl.insertCell().textContent = obj.name;
+    }
+    // create property value cells
+    colProperties.forEach( function (p) {
+      var c=null;
+      c = rowEl.insertCell();
+      //c.textContent = cLASS.convertPropValToStr( Class, p, obj[p]);
+      c.textContent = obj.getValueAsString( p);
+      // save value for being able to restore it
+      c.setAttribute("data-oldVal", c.textContent);
+      if (!propDefs || !propDefs[p].stringified) {
+        c.setAttribute("contenteditable","true");
+        c.title = "Click to edit!";
+      }
+      c.addEventListener("blur", function (e) {
+        var tdEl = e.target,
+            val = tdEl.textContent,
+            colNo = tdEl.cellIndex - 1, // skip first column (name/ID)
+            rowNo = tdEl.parentElement.rowIndex - 2,  // rowIndex includes 2 tHead rows
+            prop = colProperties[colNo],
+            constrVio = cLASS.check( prop, propDefs[prop], val);
+        if (constrVio.message) {
+          alert( constrVio.message);
+          tdEl.textContent = tdEl.getAttribute("data-oldVal");
+        } else {
+          val = constrVio.checkedValue;
+          // update corresponding object slot
+          rowObjects[rowNo][prop] = val;
+          tdEl.setAttribute("data-oldVal", tdEl.textContent);
+        }
+      });
     });
   }
-  popTableEl.appendChild( tBody);
-  // store properties displayed in table  TODO: currently not used...
-  popTableEl.setAttribute("data-properties", columnProperties.join(" "));
-  // create table heading
-  popTableEl.appendChild( document.createElement("thead"));
-  headerRowEl = popTableEl.tHead.insertRow();
-  cell = headerRowEl.insertCell();
-  cell.textContent = Class.Name;
-  cell.colSpan = Object.keys( Class.properties).length + 1;
-  // create fixed "ID/Name" column heading
-  headerRowEl = popTableEl.tHead.insertRow();
-  headerRowEl.insertCell().textContent = "ID/Name";
-  // create column headings for other columns
-  Object.keys( Class.properties).forEach( function (p) {
-    var c=null;
-    if (columnProperties.includes( p)) {
-      c = headerRowEl.insertCell();
-      c.textContent = Class.properties[p].label || p;
-    };
-  });
-  // create rows for all objects
-  Object.keys( Class.instances).forEach( function (objIdStr,i) {
-    var obj = Class.instances[objIdStr],
-        rowEl = tBody.insertRow();
-    // create object row
-    rowObjects[i] = obj;
-    // create property value cells for own properties TODO: support inherited properties
-    rowEl.insertCell().textContent = obj.name ? obj.id +" / "+ obj.name : obj.id;
-    Object.keys( Class.properties).forEach( function (p) {
+  // create an overflow indication row
+  if (nmrOfRecords > maxNmrOfRows) {
+    rowEl = tBody.insertRow();
+    if (obj.id) rowEl.insertCell().textContent = "...";
+    Object.keys( propDefs).forEach( function (p) {
       var c=null;
-      if (columnProperties.includes( p)) {
+      if (colProperties.includes( p)) {
         c = rowEl.insertCell();
-        //c.textContent = cLASS.convertPropValToStr( Class, p, obj[p]);
-        c.textContent = obj.getValueAsString( p);
-        // save value for being able to restore it
-        c.setAttribute("data-oldVal", c.textContent);
-        c.setAttribute("contenteditable","true");
-        c.title = "Click to change!";
-        c.addEventListener("blur", function (e) {
-          var tdEl = e.target,
-              val = tdEl.textContent,
-              colNo = tdEl.cellIndex - 1, // skip first column (name/ID)
-              rowNo = tdEl.parentElement.rowIndex - 2,  // rowIndex includes 2 tHead rows
-              prop = columnProperties[colNo],
-              constrVio = cLASS.check( prop, Class.properties[prop], val);
-          if (constrVio.message) {
-            alert( constrVio.message);
-            tdEl.textContent = tdEl.getAttribute("data-oldVal");
-          } else {
-            val = constrVio.checkedValue;
-            // update corresponding object slot
-            rowObjects[rowNo][prop] = val;
-            tdEl.setAttribute("data-oldVal", tdEl.textContent);
-          }
-        });
-      };
+        c.textContent = "...";
+      }
     });
-  });
+  }
   // create an AddRow button
   //oBJECTvIEW.createUiElemsForUserActions( popTableEl, this.userActions);
-  return popTableEl;
+  return tableEl;
 };
 /**
  * Create UI elements (like buttons) for all user actions of the view
@@ -2574,115 +2713,6 @@ oBJECTvIEW.createUiFromViewModel = function (viewModel) {
 };
 
 
- /**
- * @fileOverview  A library of XHR-based HTTP messaging methods.
- *                It uses JS Promises in the underlayer.
- * @author Gerd Wagner
- * @copyright Copyright 2015 Gerd Wagner, Chair of Internet Technology,
- *   Brandenburg University of Technology, Germany.
- * @license The MIT License (MIT)
- */
-var xhr = {
-  URL_PATTERN: /\b(https?):\/\/[\-A-Za-z0-9+&@#\/%?=~_|!:,.;]*[\-A-Za-z0-9+&@#\/%=~_|??]/,
-  /**
-   * Default response handler, used if 
-   * a custom one is not provided by the caller 
-   * of GET, PUT, POST, DELETE or OPTIONS.
-   */
-  defaultResponseHandler: function(rsp) {
-    if (rsp.status === 200 || rsp.status === 201 || rsp.status === 304) 
-      console.log("Response: " + rsp.responseText); 
-     else console.log("Error " + rsp.status +": "+ rsp.statusText);
-   },
-  /**
-   * Utility method encapsulating common code 
-   * required to initiate the specific XHR request.
-   */
-  initiateRequest: function (params, type) {
-    params.method = type;
-    if (typeof params.handleResponse !== "function")
-      params.handleResponse = xhr.defaultResponseHandler;
-    xhr.makeRequest( params)
-    .then(function (p) {params.handleResponse(p)})
-    .catch(function (e) {console.log(e)});
-  },
-  /**
-   * Make an XHR GET request
-   * @param params  Contains parameter slots
-   */
-  OPTIONS: function (params) {
-    xhr.initiateRequest(params, "OPTIONS");
-  },
-  /**
-   * Make an XHR GET request
-   * @param params  Contains parameter slots
-   */
-  GET: function (params) {
-    xhr.initiateRequest(params, "GET");
-  },
-  /**
-   * Make an XHR POST request
-   * @param params  Contains parameter slots
-   */
-  POST: function (params) {
-    xhr.initiateRequest(params, "POST");
-  },
-  /**
-   * Make an XHR PUT request
-   * @param params  Contains parameter slots
-   */
-  PUT: function (params) {
-    xhr.initiateRequest(params, "PUT");
-  },
-  /**
-   * Make an XHR DELETE request
-   * @param params  Contains parameter slots
-   */
-  DELETE: function (params) {
-    xhr.initiateRequest(params, "DELETE");
-  },
-  /**
-   * Make an XHR request
-   * @param {{method: string?, url: string, 
-   *          reqFormat: string?, respFormat: string?,
-   *          handleResponse: function?,
-   *          requestHeaders: Map?}
-   *        } params  The parameter slots.
-   */
-  makeRequest: function (params) {
-    return new Promise(function(resolve, reject) {
-      var req=null, url="", method="",
-          reqFormat="", respFormat="";
-      if (!params.url) {
-        reject(new Error("Missing value for url parameter in XHR GET request!"));
-      } else if (!xhr.URL_PATTERN.test( params.url)) {
-        reject(new Error("Invalid URL in XHR GET request!"));    
-      } else {
-        url = params.url;
-        req = new XMLHttpRequest();
-        method = (params.method) ? params.method : "GET";  // default
-        reqFormat = (params.reqFormat) ? params.reqFormat : 
-            "application/x-www-form-urlencoded";  // default
-        respFormat = (params.respFormat) ? params.respFormat : "application/json";  // default
-      }
-      req.open( method, url, true);
-      req.onload = function (e) {resolve(e.target);};
-      req.onerror = reject;
-      if (params.requestHeaders) {
-        Object.keys( params.requestHeaders).forEach( function (rH) {
-          req.setRequestHeader( rH, params.requestHeaders[rH]);
-        });
-      }
-      req.setRequestHeader("Accept", respFormat);
-      if (method === "GET" || method === "DELETE") {
-        req.send("");
-      } else {  // POST and PUT
-        req.setRequestHeader("Content-Type", reqFormat);
-        req.send( params.msgBody);
-      }
-    });
-  }
-};
 /**
  * @fileOverview  This file contains the definition of the library class
  * sTORAGEmANAGER.
@@ -3119,5 +3149,148 @@ sTORAGEmANAGER.adapters["LocalStorage"] = {
         }
       }
     });
+  }
+};
+/**
+ * @fileOverview  Storage management methods for the "IndexedDB" adapter
+ * @author Gerd Wagner
+ * @copyright Copyright 2017 Gerd Wagner, Chair of Internet Technology,
+ *   Brandenburg University of Technology, Germany.
+ * @license The MIT License (MIT)
+ */
+sTORAGEmANAGER.adapters["IndexedDB"] = {
+  //------------------------------------------------
+  createEmptyDb: function (dbName, modelClasses) {
+  //------------------------------------------------
+    return new Promise( function (resolve) {
+      idb.open( dbName, 1, function (upgradeDb) {
+        modelClasses.forEach( function (mc) {
+          var tableName = util.class2TableName( mc.Name);
+          if (!upgradeDb.objectStoreNames.contains( tableName)) {
+            upgradeDb.createObjectStore( tableName, {keyPath:"id"});
+            // possibly create autoIncrement standard ID attributes
+          }
+        })
+      }).then( resolve);
+    });
+  },
+  //------------------------------------------------
+  add: function (dbName, mc, records) {
+  //------------------------------------------------
+    return new Promise( function (resolve, reject) {
+      var tableName = util.class2TableName( mc.Name);
+      idb.open( dbName).then( function (idbCx) {  // idbCx is a DB connection
+        var tx = idbCx.transaction( tableName, "readwrite");
+        var os = tx.objectStore( tableName);
+        if (!Array.isArray( records)) {  // single record insertion
+          records = [records];
+        }
+        // Promise.all takes a list of promises and resolves if all of them do
+        return Promise.all( records.map( function (rec) {return os.add( rec);}))
+            .then( function () {return tx.complete;});
+      }).then( resolve)
+      .catch( function (err) {
+        reject( err);
+      });
+    });
+  },
+  //------------------------------------------------
+  retrieve: function (dbName, mc, id) {
+  //------------------------------------------------
+    return new Promise( function (resolve) {
+      var tableName = util.class2TableName( mc.Name);
+      idb.open( dbName).then( function (idbCx) {  // idbCx is a DB connection
+        var tx = idbCx.transaction( tableName, "readonly");
+        var os = tx.objectStore( tableName);
+        return os.get( id);
+      }).catch( function (err) {
+        console.log( err);
+      }).then( function( result) {
+        if (result === undefined) result = null;
+        resolve( result);
+      });
+    });
+  },
+  //------------------------------------------------
+  retrieveAll: function (dbName, mc) {
+  //------------------------------------------------
+    return new Promise( function (resolve) {
+      var tableName = util.class2TableName( mc.Name);
+      idb.open( dbName).then( function (idbCx) {  // idbCx is a DB connection
+        var tx = idbCx.transaction( tableName, "readonly");
+        var os = tx.objectStore( tableName);
+        return os.getAll();
+      }).catch( function (err) {
+        console.log( err);
+      }).then( function( results) {
+        if (results === undefined) results = [];
+        resolve( results);
+      });
+    });
+  },
+  //------------------------------------------------
+  update: function (dbName, mc, id, slots) {
+  //------------------------------------------------
+    return new Promise( function (resolve) {
+      var tableName = util.class2TableName( mc.Name);
+      idb.open( dbName).then( function (idbCx) {  // idbCx is a DB connection
+        var tx = idbCx.transaction( tableName, "readwrite");
+        var os = tx.objectStore( tableName);
+        slots["id"] = id;
+        os.put( slots);
+        return tx.complete;
+      }).catch( function (err) {
+        console.log( err);
+      }).then( resolve);
+    });
+  },
+  //------------------------------------------------
+  destroy: function (dbName, mc, id) {
+  //------------------------------------------------
+    return new Promise( function (resolve) {
+      var tableName = util.class2TableName( mc.Name);
+      idb.open( dbName).then( function (idbCx) {  // idbCx is a DB connection
+        var tx = idbCx.transaction( tableName, "readwrite");
+        var os = tx.objectStore( tableName);
+        os.delete( id);
+        return tx.complete;
+      }).catch( function (err) {
+        console.log( err);
+      }).then( resolve);
+    });
+  },
+  //------------------------------------------------
+  clearTable: function (dbName, mc) {
+  //------------------------------------------------
+    return new Promise( function (resolve) {
+      var tableName = util.class2TableName( mc.Name);
+      idb.open( dbName).then( function (idbCx) {  // idbCx is a DB connection
+        var tx = idbCx.transaction( tableName, "readwrite");
+        var os = tx.objectStore( tableName);
+        os.clear();
+        return tx.complete;
+      }).catch( function (err) {
+        console.log( err);
+      }).then( resolve);
+    });
+  },
+  //------------------------------------------------
+  clearDB: function (dbName) {
+  //------------------------------------------------
+    return new Promise( function (resolve) {
+      idb.open( dbName).then( function (idbCx) {  // idbCx is a DB connection
+        var tx = idbCx.transaction( idbCx.objectStoreNames, "readwrite");
+        // Promise.all takes a list of promises and resolves if all of them do
+        return Promise.all( Array.from( idbCx.objectStoreNames,
+            function (osName) {return tx.objectStore( osName).clear();}))
+            .then( function () {return tx.complete;});
+      }).catch( function (err) {
+        console.log( err);
+      }).then( resolve);
+    });
+  },
+  //------------------------------------------------
+  saveOnUnload: function (dbName) {  // not yet implemented
+  //------------------------------------------------
   }
 };

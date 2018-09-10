@@ -34,8 +34,9 @@ const cLASSjsBrowserLibFiles = [
   "lib/dom.js",
   "src/oBJECTvIEW.js",
 
-  "lib/xhr.js",
-  "src/storage/sTORAGEmANAGER.js"
+  //"lib/xhr.js",
+  "src/storage/sTORAGEmANAGER.js",
+  "src/storage/sTORAGEmANAGER_IndexedDB.js"
 ];
 
 // the JS files of the cLASSjs Worker Library
@@ -45,8 +46,9 @@ const cLASSjsWorkerLibFiles = [
   "lib/util.js",
   "src/eNUMERATION.js",
   "src/cLASS.js",
-  "lib/xhr.js",
-  "src/storage/sTORAGEmANAGER.js"
+  //"lib/xhr.js",
+  "src/storage/sTORAGEmANAGER.js",
+  "src/storage/sTORAGEmANAGER_IndexedDB.js"
 ];
 
 // build the cLASSjsBrowserLib.js file
