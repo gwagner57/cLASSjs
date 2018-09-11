@@ -67,30 +67,44 @@ sTORAGEmANAGER.prototype.createEmptyDb = function (classes) {
  */
 sTORAGEmANAGER.prototype.add = function (mClass, records) {
   var adapterName = this.adapter.name,
-      dbName = this.adapter.dbName;
+      dbName = this.adapter.dbName,
+      createLog = this.createLog,
+      checkConstraints = this.checkConstraints;
   return new Promise( function (resolve) {
     var newObj=null, objID="";
     if (Array.isArray( records)) {  // bulk insertion
+      if (records[0] && !records[0].id && typeof mClass.getAutoId === "function") {
+        records.forEach( function (rec) {
+          rec.id = mClass.getAutoId();
+        })
+      }
       sTORAGEmANAGER.adapters[adapterName].add( dbName, mClass, records)
       .then( function () {
-        console.log( records.length +" "+ mClass.Name +"s added.");
+        if (createLog) console.log( records.length +" "+ mClass.Name +"s added.");
         if (typeof resolve === "function") resolve();
       });
     } else {  // single record insertion
-      try {
-        newObj = new mClass( records);  // check constraints
-        if (newObj) {
-          objID = newObj.id;  // save object ID
-          sTORAGEmANAGER.adapters[adapterName].add( dbName, mClass, newObj)
-          .then( function () {
-            console.log( mClass.Name +" "+ objID +" added.");
-            if (typeof resolve === "function") resolve();
-          });
+      if (!records.id && typeof mClass.getAutoId === "function") {
+        records.id = mClass.getAutoId();
+      }
+      if (checkConstraints) {
+        try {newObj = new mClass( records);}  // check constraints
+        catch (e) {
+          if (e instanceof ConstraintViolation) {
+            console.log( e.constructor.name +": "+ e.message);
+          } else console.log( e);
         }
-      } catch (e) {
-        if (e instanceof ConstraintViolation) {
-          console.log( e.constructor.name +": "+ e.message);
-        } else console.log( e);
+      } else {
+        newObj = records;
+      }
+      if (newObj) {
+        objID = newObj.id;  // save object ID
+        sTORAGEmANAGER.adapters[adapterName].add( dbName, mClass, newObj).then( function () {
+          if (createLog) console.log( util.invCamelToUppercase( mClass.Name) +" "+ objID +" added.");
+          if (typeof resolve === "function") resolve();
+        }).catch( function (error) {
+          console.log( error.name +": "+ error.message);
+        });
       }
     }
   });

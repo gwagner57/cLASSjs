@@ -532,7 +532,7 @@ cLASS.isIntegerType = function (T) {
          }
        });
        break;
-     case "Date":
+     case "DateTime":
        valuesToCheck.forEach( function (v,i) {
          if (typeof v === "string" &&
              (/\d{4}-(0\d|1[0-2])-([0-2]\d|3[0-1])/.test(v) ||

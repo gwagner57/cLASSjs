@@ -12,10 +12,10 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
     return new Promise( function (resolve) {
       idb.open( dbName, 1, function (upgradeDb) {
         modelClasses.forEach( function (mc) {
-          var tableName = util.class2TableName( mc.Name);
+          var tableName = util.class2TableName( mc.Name),
+              keyPath = "id";
           if (!upgradeDb.objectStoreNames.contains( tableName)) {
-            upgradeDb.createObjectStore( tableName, {keyPath:"id"});
-            // possibly create autoIncrement standard ID attributes
+            upgradeDb.createObjectStore( tableName, {keyPath: keyPath});
           }
         })
       }).then( resolve);
@@ -29,16 +29,12 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
       idb.open( dbName).then( function (idbCx) {  // idbCx is a DB connection
         var tx = idbCx.transaction( tableName, "readwrite");
         var os = tx.objectStore( tableName);
-        if (!Array.isArray( records)) {  // single record insertion
-          records = [records];
-        }
+        if (!Array.isArray( records)) records = [records];  // single record insertion
         // Promise.all takes a list of promises and resolves if all of them do
         return Promise.all( records.map( function (rec) {return os.add( rec);}))
             .then( function () {return tx.complete;});
       }).then( resolve)
-      .catch( function (err) {
-        reject( err);
-      });
+      .catch( function (err) {console.log( err.name +": "+ err.message);});
     });
   },
   //------------------------------------------------
@@ -50,12 +46,10 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
         var tx = idbCx.transaction( tableName, "readonly");
         var os = tx.objectStore( tableName);
         return os.get( id);
-      }).catch( function (err) {
-        console.log( err);
       }).then( function( result) {
         if (result === undefined) result = null;
         resolve( result);
-      });
+      }).catch( function (err) {console.log( err.name +": "+ err.message);});
     });
   },
   //------------------------------------------------
@@ -67,12 +61,10 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
         var tx = idbCx.transaction( tableName, "readonly");
         var os = tx.objectStore( tableName);
         return os.getAll();
-      }).catch( function (err) {
-        console.log( err);
-      }).then( function( results) {
+      }).then( function (results) {
         if (results === undefined) results = [];
         resolve( results);
-      });
+      }).catch( function (err) {console.log( err.name +": "+ err.message);});
     });
   },
   //------------------------------------------------
@@ -86,9 +78,8 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
         slots["id"] = id;
         os.put( slots);
         return tx.complete;
-      }).catch( function (err) {
-        console.log( err);
-      }).then( resolve);
+      }).then( resolve)
+      .catch( function (err) {console.log( err.name +": "+ err.message);});
     });
   },
   //------------------------------------------------
@@ -101,9 +92,8 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
         var os = tx.objectStore( tableName);
         os.delete( id);
         return tx.complete;
-      }).catch( function (err) {
-        console.log( err);
-      }).then( resolve);
+      }).then( resolve)
+      .catch( function (err) {console.log( err.name +": "+ err.message);});
     });
   },
   //------------------------------------------------
@@ -116,9 +106,8 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
         var os = tx.objectStore( tableName);
         os.clear();
         return tx.complete;
-      }).catch( function (err) {
-        console.log( err);
-      }).then( resolve);
+      }).then( resolve)
+      .catch( function (err) {console.log( err.name +": "+ err.message);});
     });
   },
   //------------------------------------------------
@@ -131,9 +120,8 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
         return Promise.all( Array.from( idbCx.objectStoreNames,
             function (osName) {return tx.objectStore( osName).clear();}))
             .then( function () {return tx.complete;});
-      }).catch( function (err) {
-        console.log( err);
-      }).then( resolve);
+      }).then( resolve)
+      .catch( function (err) {console.log( err.name +": "+ err.message);});
     });
   },
   //------------------------------------------------
