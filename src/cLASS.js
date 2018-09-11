@@ -124,6 +124,7 @@ function cLASS (classSlots) {
   if (classSlots.isComplexDatatype) constr.isComplexDatatype = true;
   if (classSlots.isAbstract) constr.isAbstract = true;
   if (classSlots.shortLabel) constr.shortLabel = classSlots.shortLabel;
+  if (classSlots.keyPath) constr.keyPath = classSlots.keyPath;
   if (supertypeName) {
     constr.supertypeName = supertypeName;
     superclass = cLASS[supertypeName];

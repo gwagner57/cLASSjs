@@ -13,7 +13,7 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
       idb.open( dbName, 1, function (upgradeDb) {
         modelClasses.forEach( function (mc) {
           var tableName = util.class2TableName( mc.Name),
-              keyPath = "id";
+              keyPath = mc.keyPath || "id";
           if (!upgradeDb.objectStoreNames.contains( tableName)) {
             upgradeDb.createObjectStore( tableName, {keyPath: keyPath});
           }
