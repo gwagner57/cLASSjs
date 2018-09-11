@@ -19,12 +19,12 @@ pl.c.app = {
     } else {
       storageAdapter.name = "IndexedDB";
     }
-    pl.c.storageManager = new sTORAGEmANAGER( storageAdapter);
-    pl.c.storageManager.createEmptyDb().then( pl.c.quizzes.manage.initialize);
+    pl.c.storeMan = new sTORAGEmANAGER( storageAdapter);
+    pl.c.storeMan.createEmptyDb().then( pl.c.quizzes.manage.initialize);
   },
   createTestData: function () {
-    pl.c.storageManager.add(Question, [{id:1,questionTextItem:"How old are you?",hasManyCorrectAnswers:false}])
-    pl.c.storageManager.add( Quiz, [
+    pl.c.storeMan.add(Question, [{id:1,questionTextItem:"How old are you?",hasManyCorrectAnswers:false}])
+    pl.c.storeMan.add( Quiz, [
       {id: 2, titleTextItem: "Personal info", questions:[{id:1,questionTextItem:"How old are you?",hasManyCorrectAnswers:false}]}
       ]);
   },

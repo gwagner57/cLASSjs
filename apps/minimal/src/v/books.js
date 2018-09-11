@@ -9,7 +9,7 @@ pl.v.books.manage = {
   setupUserInterface: function () {
     // take care of storing unsaved data on page unload
     window.addEventListener("beforeunload", function () {
-      pl.c.storageManager.saveOnUnload();
+      pl.c.storeMan.saveOnUnload();
     });
     pl.v.books.manage.refreshUI();
   },
@@ -29,7 +29,7 @@ pl.v.books.manage = {
 **********************************************/
 pl.v.books.retrieveAndListAll = {
   setupUserInterface: function () {
-    pl.c.storageManager.retrieveAll( Book).then( function (records) {
+    pl.c.storeMan.retrieveAll( Book).then( function (records) {
         var tableBodyEl = document.querySelector(
             "section#Book-R > table > tbody");
         var i=0, row=null, book=null;
@@ -77,7 +77,7 @@ pl.v.books.create = {
     Object.keys( Book.properties).forEach( function (prop) {
       slots[prop] = formEl[prop].value;
     });
-    pl.c.storageManager.add( Book, slots);
+    pl.c.storeMan.add( Book, slots);
   }
 };
 /**********************************************
@@ -89,7 +89,7 @@ pl.v.books.update = {
         selectObjEl = formEl.selectObj,
         saveButton = formEl.commit;
     // set up the book selection list
-    pl.c.storageManager.retrieveAll( Book).then( function (records) {
+    pl.c.storeMan.retrieveAll( Book).then( function (records) {
       dom.fillSelectWithOptionsFromEntityMap( selectObjEl,
           records, {displayProp:"title"});
       pl.v.books.manage.refreshUI("U");
@@ -99,7 +99,7 @@ pl.v.books.update = {
     selectObjEl.addEventListener("change", function () {
       var book=null, key = selectObjEl.value;
       if (key) {
-        pl.c.storageManager.retrieve( Book, key).then( function (book) {
+        pl.c.storeMan.retrieve( Book, key).then( function (book) {
           Object.keys( Book.properties).forEach( function (prop) {
             formEl[prop].value = (book[prop] !== undefined) ? book[prop] : "";
           });
@@ -127,7 +127,7 @@ pl.v.books.update = {
       if (prop === "id") return;
       slots[prop] = formEl[prop].value;
     });
-    pl.c.storageManager.update( Book, formEl.id.value, slots);
+    pl.c.storeMan.update( Book, formEl.id.value, slots);
   }
 };
 /**********************************************
@@ -139,7 +139,7 @@ pl.v.books.destroy = {
         deleteButton = formEl.commit,
         selectObjEl = formEl.selectObj;
     // set up the book selection list
-    pl.c.storageManager.retrieveAll( Book).then( function (records) {
+    pl.c.storeMan.retrieveAll( Book).then( function (records) {
       dom.fillSelectWithOptionsFromEntityMap( selectObjEl,
           records, {displayProp:"title"});
       pl.v.books.manage.refreshUI("D");
@@ -150,7 +150,7 @@ pl.v.books.destroy = {
       var isbn = selectObjEl.value,
           selectIndex = selectObjEl.selectedIndex;
       if (isbn) {
-        pl.c.storageManager.destroy( Book, isbn).then( function () {
+        pl.c.storeMan.destroy( Book, isbn).then( function () {
           // remove deleted book from select options
           selectObjEl.remove( selectIndex);
           formEl.reset();

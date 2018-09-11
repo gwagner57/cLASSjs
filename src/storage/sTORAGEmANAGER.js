@@ -69,7 +69,7 @@ sTORAGEmANAGER.prototype.add = function (mClass, records) {
   var adapterName = this.adapter.name,
       dbName = this.adapter.dbName,
       createLog = this.createLog,
-      checkConstraints = this.checkConstraints;
+      checkConstraints = this.validateBeforeSave;
   return new Promise( function (resolve) {
     var newObj=null, objID="";
     if (Array.isArray( records)) {  // bulk insertion
