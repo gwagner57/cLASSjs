@@ -242,9 +242,22 @@ util.mergeObjects = function () {
 // Example 1: EnglishTeacher => english_teachers
 // Example 2: eXPERIMENTdEF => EXPERIMENT_DEFS
 util.class2TableName = function (className) {
-  if (className.charAt(0) === className.charAt(0).toUpperCase())  // starts with upper case
-  return util.camelToLowerCase( className) + "s";
-  else return util.invCamelToUppercase( className) + "S";
+  var tableName="";
+  if (className.charAt(0) === className.charAt(0).toUpperCase()) { // starts with upper case
+    if (className.charAt( className.length-1) === "y") {
+      tableName = util.camelToLowerCase( className.slice( 0, className.length-1)) + "ies";
+    } else {
+      tableName = util.camelToLowerCase( className) + "s";
+    }
+    return tableName;
+  } else { // inverse camel case (starts with lower case)
+    if (className.charAt( className.length-1) === "Y") {
+      tableName = util.invCamelToUppercase( className.slice( 0, className.length-1)) + "IES";
+    } else {
+      tableName = util.invCamelToUppercase( className) + "S";
+    }
+    return tableName;
+  }
 };
 // Example: books => Book
 util.table2ClassName = function (tableName) {
@@ -631,6 +644,7 @@ function cLASS (classSlots) {
   if (classSlots.isComplexDatatype) constr.isComplexDatatype = true;
   if (classSlots.isAbstract) constr.isAbstract = true;
   if (classSlots.shortLabel) constr.shortLabel = classSlots.shortLabel;
+  if (classSlots.primaryKey) constr.primaryKey = classSlots.primaryKey;
   if (supertypeName) {
     constr.supertypeName = supertypeName;
     superclass = cLASS[supertypeName];
@@ -3016,13 +3030,16 @@ sTORAGEmANAGER.prototype.createEmptyDb = function (classes) {
       dbName = this.adapter.dbName;
   return new Promise( function (resolve) {
     var modelClasses=[];
-    if (classes && classes.length > 0) {
+    if (Array.isArray( classes) && classes.length > 0) {
       modelClasses = classes;
     } else {
       Object.keys( cLASS).forEach( function (key) {
-        // collect all non-abstract cLASSes that are not datatype classes
-        if (!cLASS[key].isAbstract && !cLASS[key].isComplexDatatype) {
-          modelClasses.push( cLASS[key]);
+        // test if cLASS[key] represents a cLASS
+        if (typeof cLASS[key] === "function" && cLASS[key].properties) {
+          // collect all non-abstract cLASSes that are not datatype classes
+          if (!cLASS[key].isAbstract && !cLASS[key].isComplexDatatype) {
+            modelClasses.push( cLASS[key]);
+          }
         }
       });
     }
@@ -3034,50 +3051,47 @@ sTORAGEmANAGER.prototype.createEmptyDb = function (classes) {
  * Generic method for creating and "persisting" new model objects
  * @method
  * @param {object} mClass  The model cLASS concerned
- * @param {object} records  The object creation slots
+ * @param {object} rec  A record or record list
  */
-sTORAGEmANAGER.prototype.add = function (mClass, records) {
+sTORAGEmANAGER.prototype.add = function (mClass, rec) {
   var adapterName = this.adapter.name,
       dbName = this.adapter.dbName,
       createLog = this.createLog,
-      checkConstraints = this.checkConstraints;
+      checkConstraints = this.validateBeforeSave,
+      records=[], validRecords=[];
+  if (!Array.isArray( rec)) records = [rec];
+  else if (typeof rec === "object") records = rec;
+  else throw Error("2nd argument of 'add' must be a record or record list!");
+  // create auto-IDs if required
+  if (mClass.properties.id && mClass.properties.id.range === "AutoNumber") {
+    records.forEach( function (rec) {
+      if (!rec.id) {  // do not overwrite assigned ID values
+        if (typeof mClass.getAutoId === "function") rec.id = mClass.getAutoId();
+        else if (mClass.idCounter !== undefined) rec.id = ++mClass.idCounter;
+      }
+    })
+  }
+  // check constraints before save if required
+  if (checkConstraints) {
+    records.forEach( function (r) {
+      try {newObj = new mClass( r);}  // check constraints
+      catch (e) {
+        if (e instanceof ConstraintViolation) {
+          console.log( e.constructor.name +": "+ e.message);
+        } else console.log( e);
+      }
+      if (newObj) validRecords.push( newObj);
+    });
+    records = validRecords;
+  }
   return new Promise( function (resolve) {
     var newObj=null, objID="";
-    if (Array.isArray( records)) {  // bulk insertion
-      if (records[0] && !records[0].id && typeof mClass.getAutoId === "function") {
-        records.forEach( function (rec) {
-          rec.id = mClass.getAutoId();
-        })
-      }
-      sTORAGEmANAGER.adapters[adapterName].add( dbName, mClass, records)
-      .then( function () {
-        if (createLog) console.log( records.length +" "+ mClass.Name +"s added.");
-        if (typeof resolve === "function") resolve();
-      });
-    } else {  // single record insertion
-      if (!records.id && typeof mClass.getAutoId === "function") {
-        records.id = mClass.getAutoId();
-      }
-      if (checkConstraints) {
-        try {newObj = new mClass( records);}  // check constraints
-        catch (e) {
-          if (e instanceof ConstraintViolation) {
-            console.log( e.constructor.name +": "+ e.message);
-          } else console.log( e);
-        }
-      } else {
-        newObj = records;
-      }
-      if (newObj) {
-        objID = newObj.id;  // save object ID
-        sTORAGEmANAGER.adapters[adapterName].add( dbName, mClass, newObj).then( function () {
-          if (createLog) console.log( util.invCamelToUppercase( mClass.Name) +" "+ objID +" added.");
-          if (typeof resolve === "function") resolve();
-        }).catch( function (error) {
-          console.log( error.name +": "+ error.message);
-        });
-      }
-    }
+    sTORAGEmANAGER.adapters[adapterName].add( dbName, mClass, records).then( function () {
+      if (createLog) console.log( records.length +" "+ mClass.Name +"(s) added.");
+      if (typeof resolve === "function") resolve();
+    }).catch( function (error) {
+      console.log( error.name +": "+ error.message);
+    });
   });
 };
 /**
@@ -3441,7 +3455,7 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
       idb.open( dbName, 1, function (upgradeDb) {
         modelClasses.forEach( function (mc) {
           var tableName = util.class2TableName( mc.Name),
-              keyPath = "id";
+              keyPath = mc.primaryKey || "id";
           if (!upgradeDb.objectStoreNames.contains( tableName)) {
             upgradeDb.createObjectStore( tableName, {keyPath: keyPath});
           }
