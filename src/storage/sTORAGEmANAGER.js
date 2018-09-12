@@ -45,13 +45,16 @@ sTORAGEmANAGER.prototype.createEmptyDb = function (classes) {
       dbName = this.adapter.dbName;
   return new Promise( function (resolve) {
     var modelClasses=[];
-    if (classes && classes.length > 0) {
+    if (Array.isArray( classes) && classes.length > 0) {
       modelClasses = classes;
     } else {
       Object.keys( cLASS).forEach( function (key) {
-        // collect all non-abstract cLASSes that are not datatype classes
-        if (!cLASS[key].isAbstract && !cLASS[key].isComplexDatatype) {
-          modelClasses.push( cLASS[key]);
+        // test if cLASS[key] represents a cLASS
+        if (typeof cLASS[key] === "function" && cLASS[key].properties) {
+          // collect all non-abstract cLASSes that are not datatype classes
+          if (!cLASS[key].isAbstract && !cLASS[key].isComplexDatatype) {
+            modelClasses.push( cLASS[key]);
+          }
         }
       });
     }
@@ -63,50 +66,47 @@ sTORAGEmANAGER.prototype.createEmptyDb = function (classes) {
  * Generic method for creating and "persisting" new model objects
  * @method
  * @param {object} mClass  The model cLASS concerned
- * @param {object} records  The object creation slots
+ * @param {object} rec  A record or record list
  */
-sTORAGEmANAGER.prototype.add = function (mClass, records) {
+sTORAGEmANAGER.prototype.add = function (mClass, rec) {
   var adapterName = this.adapter.name,
       dbName = this.adapter.dbName,
       createLog = this.createLog,
-      checkConstraints = this.validateBeforeSave;
+      checkConstraints = this.validateBeforeSave,
+      records=[], validRecords=[];
+  if (!Array.isArray( rec)) records = [rec];
+  else if (typeof rec === "object") records = rec;
+  else throw Error("2nd argument of 'add' must be a record or record list!");
+  // create auto-IDs if required
+  if (mClass.properties.id && mClass.properties.id.range === "AutoNumber") {
+    records.forEach( function (rec) {
+      if (!rec.id) {  // do not overwrite assigned ID values
+        if (typeof mClass.getAutoId === "function") rec.id = mClass.getAutoId();
+        else if (mClass.idCounter !== undefined) rec.id = ++mClass.idCounter;
+      }
+    })
+  }
+  // check constraints before save if required
+  if (checkConstraints) {
+    records.forEach( function (r) {
+      try {newObj = new mClass( r);}  // check constraints
+      catch (e) {
+        if (e instanceof ConstraintViolation) {
+          console.log( e.constructor.name +": "+ e.message);
+        } else console.log( e);
+      }
+      if (newObj) validRecords.push( newObj);
+    });
+    records = validRecords;
+  }
   return new Promise( function (resolve) {
     var newObj=null, objID="";
-    if (Array.isArray( records)) {  // bulk insertion
-      if (records[0] && !records[0].id && typeof mClass.getAutoId === "function") {
-        records.forEach( function (rec) {
-          rec.id = mClass.getAutoId();
-        })
-      }
-      sTORAGEmANAGER.adapters[adapterName].add( dbName, mClass, records)
-      .then( function () {
-        if (createLog) console.log( records.length +" "+ mClass.Name +"s added.");
-        if (typeof resolve === "function") resolve();
-      });
-    } else {  // single record insertion
-      if (!records.id && typeof mClass.getAutoId === "function") {
-        records.id = mClass.getAutoId();
-      }
-      if (checkConstraints) {
-        try {newObj = new mClass( records);}  // check constraints
-        catch (e) {
-          if (e instanceof ConstraintViolation) {
-            console.log( e.constructor.name +": "+ e.message);
-          } else console.log( e);
-        }
-      } else {
-        newObj = records;
-      }
-      if (newObj) {
-        objID = newObj.id;  // save object ID
-        sTORAGEmANAGER.adapters[adapterName].add( dbName, mClass, newObj).then( function () {
-          if (createLog) console.log( util.invCamelToUppercase( mClass.Name) +" "+ objID +" added.");
-          if (typeof resolve === "function") resolve();
-        }).catch( function (error) {
-          console.log( error.name +": "+ error.message);
-        });
-      }
-    }
+    sTORAGEmANAGER.adapters[adapterName].add( dbName, mClass, records).then( function () {
+      if (createLog) console.log( records.length +" "+ mClass.Name +"(s) added.");
+      if (typeof resolve === "function") resolve();
+    }).catch( function (error) {
+      console.log( error.name +": "+ error.message);
+    });
   });
 };
 /**

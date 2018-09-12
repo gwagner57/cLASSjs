@@ -22,8 +22,7 @@ vt.c.app = {
     vt.c.storeMan = new sTORAGEmANAGER( storageAdapter);
     vt.c.storeMan.validateBeforeSave = true;
     vt.c.storeMan.createLog = true;
-    vt.c.storeMan.createEmptyDb([vt.DictionaryEntry]).then(
-        vt.c.dictEntries.manage.initialize);
+    vt.c.storeMan.createEmptyDb().then( vt.c.dictEntries.manage.initialize);
   },
   createTestData: function () {
     vt.c.storeMan.add( vt.DictionaryEntry, [
@@ -46,6 +45,27 @@ vt.c.app = {
             de:"Fähigkeit", fr:"capacité / faculté / compétence"
           })
         ]},
+    ]);
+    vt.c.storeMan.add( vt.RenderingForm, [
+      {name: "Enter Text", description: "Enter a correct translation of a word or phrase.",
+        renderingMode: vt.RenderingModeEL.SINGLE_PROBLEM},
+      {name: "Multiple Choice", description: "Mark a choice as a correct translation of a word or phrase.",
+        renderingMode: vt.RenderingModeEL.SINGLE_PROBLEM},
+      {name: "Concentration Game", description: "Find correct translation pairs in a Concentration Game grid.",
+        renderingMode: vt.RenderingModeEL.MULTIPLE_PROBLEMS},
+    ]);
+    vt.c.storeMan.add( vt.LearningUnit, [
+      {title: "Basic Vocabulary Unit 1", description: "This learning unit is about ...",
+        exercises: [
+          new vt.VocabularyExercise({
+            renderingForm: "Simple Translation",
+            problems: [
+              new vt.TranslationProblem({source: "abandon", meaningVariantNo: 1}),
+              new vt.TranslationProblem({source: "abandon", meaningVariantNo: 2}),
+              new vt.TranslationProblem({source: "ability", meaningVariantNo: 1})
+            ],
+          })
+      ]}
     ]);
   }
 };
