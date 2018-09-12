@@ -28,7 +28,7 @@ A JS library for defining
 
 Recall that *enumeration literals* are constants that stand for a positive integer (the *enumeration index*). 
 
-For instance, the enum literal `WeatherStateEL.SUNNY` stands for the enum index 1. In program code, we do no use the enum index, but rather the enum literal. For instance, 
+For instance, the enum literal `WeatherStateEL.SUNNY` stands for the enum index 1. In program code, we do not use the enum index, but rather the enum literal. For instance, 
 
     var theWeather = new Weather({
           weatherState: WeatherStateEL.SUNNY, // do not use the enum index value 1
@@ -39,9 +39,8 @@ For instance, the enum literal `WeatherStateEL.SUNNY` stands for the enum index 
 
 We loop over the enumeration `WeatherStateEL` with a `for` loop counting from 1 to `WeatherStateEL.MAX`:
 
-    var i=0;
-    for (i=1; i <= WeatherStateEL.MAX; i++) {
-      switch (i) {
+    for (let weatherState = 1; weatherState <= WeatherStateEL.MAX; weatherState++) {
+      switch (weatherState) {
       case WeatherStateEL.SUNNY: 
         ...
         break;
@@ -52,14 +51,15 @@ We loop over the enumeration `WeatherStateEL` with a `for` loop counting from 1 
     }
 
 
-## Use Case 2: Flexible Data Storage Management with Adapters
+## Use Case 2: Flexible Data Storage Management with Storage Adapters
 
-cLASSjs comes with a sTORAGEmANAGER class and two storage adapters for using `localStorage` or `ìndexedDB`. A storage manager works like a wrapper of the methods of an adapter. The storage manager methods invoke corresponding methods of its adapter. The following code example shows how to use a storage manager for invoking a data retrieval operation on a model class `Book`:
+cLASSjs comes with a sTORAGEmANAGER class and two storage adapters for using `localStorage` or `ìndexedDB`. 
+
+A storage manager works like a wrapper of the methods of an adapter. The storage manager methods invoke corresponding methods of its adapter. The following code example shows how to use a storage manager for invoking a data retrieval operation on a model class `Book`:
 
     var storageAdapter = {name:"IndexedDB", dbName:"Test"};
     var storageManager = new sTORAGEmANAGER( storageAdapter);
     storageManager.retrieveAll( Book).then( list); 
-
 
 Since the IndexedDB technology is much more powerful, it is normally preferred for local data storage. However, older browsers (such as IE 9) may not support it. In this case we can easily fall back to LocalStorage in the followig way:
 
@@ -72,7 +72,6 @@ Since the IndexedDB technology is much more powerful, it is normally preferred f
       storageAdapter.name = "IndexedDB";
     }
     storageManager = new sTORAGEmANAGER( storageAdapter);
-
 
 ## Use Case 3: Declarative Constraint Valdiation
 
