@@ -1,15 +1,19 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en" vocab="http://schema.org/" typeof="WebApplication">
-  <head>
+  <head> 
+    <title>Make a Quiz</title>
     <meta charset="UTF-8" />
-    <title>Plain JS Unidirectional Association App</title>
-    <meta property="browserRequirements" content="requires HTML5 support" />
-    <meta property="storageRequirements" content="Local Storage of browser" />
-    <meta property="countriesSupported" content="en" />
-    <meta property="applicationCategory" content="Data management" />
-    <meta property="creator" content="Gerd Wagner" /> <!-- should be a Person object instead of text -->
-    <link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.3.0/pure-min.css" />
+	<link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.3.0/pure-min.css" />
     <link rel="stylesheet" href="css/main.css"/>
+	<meta property="applicationCategory" content="Data management" />
+    <meta property="creator" content="Gerd Wagner" /> <!-- should be a Person object instead of text -->
+ <!-- Load polyfills for supporting >=IE9 -->
+  <script src="https://cdn.polyfill.io/v2/polyfill.js?features=Array.from,Array.prototype.find,Array.prototype.includes,DOMTokenList,Element.prototype.after,Element.prototype.before,Element.prototype.classList,Element.prototype.cloneNode,Number.isInteger,Object.keys,Object.values,Promise,String.prototype.includes,console.log,&flags=gated" defer async></script>
+  <!-- Load the Promised IndexedDB library -->
+  <script src="../../lib/idb.js "></script>    <meta property="browserRequirements" content="requires HTML5 support" />
+   
+    
+
     <script src="../../lib/browserShims.js"></script>
   <script src="../../lib/util.js"></script>
   <script src="../../lib/dom.js"></script>
@@ -18,19 +22,24 @@
   <script src="../../src/eNUMERATION.js"></script>
   <script src="../../src/cLASS.js"></script>
   <script src="../../src/oBJECTvIEW.js"></script>
-    <script src="../../src/storage/sTORAGEmANAGER_IndexedDB.js"></script>
-
+    <script src="src/c/app.js"></script>
+<script src="../../src/storage/sTORAGEmANAGER.js"></script>
+  <script src="../../src/storage/sTORAGEmANAGER_IndexedDB.js"></script>
   <script src="src/c/app.js"></script>
   <script src="src/c/quizzes.js"></script>
   <script src="src/c/questions.js"></script>
   <script src="src/m/Question.js"></script>
   <script src="src/m/Quiz.js"></script>
-  <script src="src/m/IsoLanguageCode.js"></script>
+  <script src="src/m/IsoLanguageCodeEL.js"></script>
   <script src="src/m/TextItem.js"></script>
   <script src="src/m/AnswerOption.js"></script>
   <script src="src/m/QuestionTypeEL.js"></script>
   <script src="src/m/QuestionCategory.js"></script>
-  <script src="src/m/main.js"></script>
+  <script>
+    window.addEventListener("load", pl.c.app.initialize);
+
+  </script>
+  <!--script src="src/m/main.js"></script-->
   
 
   </head>
