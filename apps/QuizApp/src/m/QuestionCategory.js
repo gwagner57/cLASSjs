@@ -9,10 +9,11 @@
  * Object type Book
  * @class
  */
-let QuestionCategory = new cLASS({
+qz.QuestionCategory = new cLASS({
   Name: "QuestionCategory",
+  primaryKey: "name",
   properties: {
-    "name": {range:"String"},
-    "description": {range:"String"},
+    "name": {range:"String", label:"Name"},
+    "description": {range:"String", optional: true, label:"Description"}
 }
 });

@@ -1,19 +1,24 @@
 /**
- * @fileOverview  The model class Book with attribute definitions and storage management methods
- * @author Gerd Wagner
- * @copyright Copyright 2013-2014 Gerd Wagner, Chair of Internet Technology, Brandenburg University of Technology, Germany.
- * @license This code is licensed under The Code Project Open License (CPOL), implying that the code is provided "as-is",
- * can be modified to create derivative works, can be redistributed, and can be used in commercial applications.
- */
-/**
- * Object type Book
+ * Enumeration
  * @class
  */
-var TextItem = new cLASS({
+qz.IsoLanguageCodeEL = new eNUMERATION("IsoLanguageCodeEL", {
+  "en": "English",
+  "es": "Spanish",
+  "fr": "French",
+  "de": "German"
+});
+/**
+ * Object type
+ * @class
+ */
+qz.TextItem = new cLASS({
   Name: "TextItem",
+  primaryKey: ["textItemNo", "language"],
   properties: {
-    "id": {range:"Integer", label:"ID"},
+    "textItemNo": {range:"PositiveInteger", label:"Text item number"},
     "language": {range:"IsoLanguageCodeEL"},
-    "text": {range:"String"},
+    "text": {range:"String"}
   }
 });
+qz.TextItem.idCounter = 0;

@@ -1,21 +1,23 @@
 /**
- * @fileOverview  The model class Book with attribute definitions and storage management methods
- * @author Gerd Wagner
- * @copyright Copyright 2013-2014 Gerd Wagner, Chair of Internet Technology, Brandenburg University of Technology, Germany.
- * @license This code is licensed under The Code Project Open License (CPOL), implying that the code is provided "as-is",
- * can be modified to create derivative works, can be redistributed, and can be used in commercial applications.
+ * Enumeration
+ * @enum
  */
+qz.QuestionTypeEL = new eNUMERATION("QuestionTypeEL",["multiple-choice", "short-answer", "number", "gap-fill"]);
+
 /**
- * Object type Book
+ * Object type
  * @class
  */
-let Question = new cLASS({
+qz.Question = new cLASS({
   Name: "Question",
   properties: {
-    "id": {range:"Integer", label:"Question ID"},
+    "id": {range:"AutoNumber", label:"Question ID"},
     "type": {range: "QuestionTypeEL"},
-    "questionTextItem": {range:"TextItem"},
-    "hasManyCorrectAnswers": {range:"Boolean", isOptional: true},
-    "answerOptions": {range: "AnswerOption", maxCard: Infinity, minCard: 2, isOptional: true}
+    "questionText": {range:"NonEmptyString"},
+    "questionTextItemNo": {range:"PositiveInteger", optional: true},
+    "category": {range: "QuestionCategory", optional: true},
+    "hasManyCorrectAnswers": {range:"Boolean", optional: true},  // default: false
+    "answerOptions": {range: "AnswerOption", maxCard: Infinity, minCard: 2, optional: true}
   }
 });
+qz.Question.idCounter = 0;

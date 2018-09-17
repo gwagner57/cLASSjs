@@ -71,7 +71,7 @@ if (!failure) {
 //test validation checks with setter
   document.write("Test the <strong>setter</strong> with flawed date value: ");
   try {
-    gw.set("dateOfbirth", "15.5.1957");
+    gw.set("dateOfbirth", "15.50.1957");
     document.write( "FAILED! <br />");
   } catch (e) {
     console.log( e.constructor.name +": "+ e.message);

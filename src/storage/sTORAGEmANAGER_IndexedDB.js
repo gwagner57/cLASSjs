@@ -12,7 +12,7 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
     return new Promise( function (resolve) {
       idb.open( dbName, 1, function (upgradeDb) {
         modelClasses.forEach( function (mc) {
-          var tableName = util.class2TableName( mc.Name),
+          var tableName = mc.tableName || util.class2TableName( mc.Name),
               keyPath = mc.primaryKey || "id";
           if (!upgradeDb.objectStoreNames.contains( tableName)) {
             upgradeDb.createObjectStore( tableName, {keyPath: keyPath});
@@ -24,12 +24,11 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
   //------------------------------------------------
   add: function (dbName, mc, records) {
   //------------------------------------------------
-    return new Promise( function (resolve, reject) {
-      var tableName = util.class2TableName( mc.Name);
+    return new Promise( function (resolve) {
+      var tableName = mc.tableName || util.class2TableName( mc.Name);
       idb.open( dbName).then( function (idbCx) {  // idbCx is a DB connection
         var tx = idbCx.transaction( tableName, "readwrite");
         var os = tx.objectStore( tableName);
-        if (!Array.isArray( records)) records = [records];  // single record insertion
         // Promise.all takes a list of promises and resolves if all of them do
         return Promise.all( records.map( function (rec) {return os.add( rec);}))
             .then( function () {return tx.complete;});
@@ -41,7 +40,7 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
   retrieve: function (dbName, mc, id) {
   //------------------------------------------------
     return new Promise( function (resolve) {
-      var tableName = util.class2TableName( mc.Name);
+      var tableName = mc.tableName || util.class2TableName( mc.Name);
       idb.open( dbName).then( function (idbCx) {  // idbCx is a DB connection
         var tx = idbCx.transaction( tableName, "readonly");
         var os = tx.objectStore( tableName);
@@ -56,7 +55,7 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
   retrieveAll: function (dbName, mc) {
   //------------------------------------------------
     return new Promise( function (resolve) {
-      var tableName = util.class2TableName( mc.Name);
+      var tableName = mc.tableName || util.class2TableName( mc.Name);
       idb.open( dbName).then( function (idbCx) {  // idbCx is a DB connection
         var tx = idbCx.transaction( tableName, "readonly");
         var os = tx.objectStore( tableName);
@@ -71,7 +70,7 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
   update: function (dbName, mc, id, slots) {
   //------------------------------------------------
     return new Promise( function (resolve) {
-      var tableName = util.class2TableName( mc.Name);
+      var tableName = mc.tableName || util.class2TableName( mc.Name);
       idb.open( dbName).then( function (idbCx) {  // idbCx is a DB connection
         var tx = idbCx.transaction( tableName, "readwrite");
         var os = tx.objectStore( tableName);
@@ -86,7 +85,7 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
   destroy: function (dbName, mc, id) {
   //------------------------------------------------
     return new Promise( function (resolve) {
-      var tableName = util.class2TableName( mc.Name);
+      var tableName = mc.tableName || util.class2TableName( mc.Name);
       idb.open( dbName).then( function (idbCx) {  // idbCx is a DB connection
         var tx = idbCx.transaction( tableName, "readwrite");
         var os = tx.objectStore( tableName);
@@ -100,7 +99,7 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
   clearTable: function (dbName, mc) {
   //------------------------------------------------
     return new Promise( function (resolve) {
-      var tableName = util.class2TableName( mc.Name);
+      var tableName = mc.tableName || util.class2TableName( mc.Name);
       idb.open( dbName).then( function (idbCx) {  // idbCx is a DB connection
         var tx = idbCx.transaction( tableName, "readwrite");
         var os = tx.objectStore( tableName);

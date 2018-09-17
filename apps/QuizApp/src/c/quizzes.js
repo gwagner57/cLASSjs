@@ -1,9 +1,10 @@
-/**
- * @fileOverview  Various controller functions for managing books
- * @author Gerd Wagner
- */
-pl.c.quizzes.manage = {
+qz.c.quizzes.manage = {
   initialize: function () {
-    pl.v.quizzes.manage.setupUserInterface();
+    qz.v.quizzes.manage.setupUserInterface();
+  }
+};
+qz.c.quizzes.takeQuiz = {
+  initialize: function () {
+    qz.v.quizzes.takeQuiz.setupUserInterface();
   }
 };

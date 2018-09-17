@@ -58,7 +58,7 @@ vt.c.app = {
       {title: "Basic Vocabulary Unit 1", description: "This learning unit is about ...",
         exercises: [
           new vt.VocabularyExercise({
-            renderingForm: "Simple Translation",
+            renderingForm: "Enter Text",
             problems: [
               new vt.TranslationProblem({source: "abandon", meaningVariantNo: 1}),
               new vt.TranslationProblem({source: "abandon", meaningVariantNo: 2}),

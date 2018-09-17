@@ -74,33 +74,40 @@ sTORAGEmANAGER.prototype.add = function (mClass, rec) {
       createLog = this.createLog,
       checkConstraints = this.validateBeforeSave,
       records=[], validRecords=[];
-  if (!Array.isArray( rec)) records = [rec];
-  else if (typeof rec === "object") records = rec;
-  else throw Error("2nd argument of 'add' must be a record or record list!");
+  if (typeof rec === "object" && !Array.isArray(rec)) {
+    records = [rec];
+  } else if (Array.isArray(rec) && rec.every( function (r) {
+             return typeof r === "object" && !Array.isArray(r)})) {
+    records = rec;
+  } else throw Error("2nd argument of 'add' must be a record or record list!");
   // create auto-IDs if required
   if (mClass.properties.id && mClass.properties.id.range === "AutoNumber") {
-    records.forEach( function (rec) {
-      if (!rec.id) {  // do not overwrite assigned ID values
-        if (typeof mClass.getAutoId === "function") rec.id = mClass.getAutoId();
-        else if (mClass.idCounter !== undefined) rec.id = ++mClass.idCounter;
+    records.forEach( function (r) {
+      if (!r.id) {  // do not overwrite assigned ID values
+        if (typeof mClass.getAutoId === "function") r.id = mClass.getAutoId();
+        else if (mClass.idCounter !== undefined) r.id = ++mClass.idCounter;
       }
     })
   }
   // check constraints before save if required
   if (checkConstraints) {
     records.forEach( function (r) {
-      try {newObj = new mClass( r);}  // check constraints
-      catch (e) {
-        if (e instanceof ConstraintViolation) {
-          console.log( e.constructor.name +": "+ e.message);
-        } else console.log( e);
+      var newObj=null;
+      if (r instanceof mClass) {
+        validRecords.push( r);
+      } else {
+        try {newObj = new mClass( r);}  // check constraints
+        catch (e) {
+          if (e instanceof ConstraintViolation) {
+            console.log( e.constructor.name +": "+ e.message);
+          } else console.log( e);
+        }
+        if (newObj) validRecords.push( newObj);
       }
-      if (newObj) validRecords.push( newObj);
     });
     records = validRecords;
   }
   return new Promise( function (resolve) {
-    var newObj=null, objID="";
     sTORAGEmANAGER.adapters[adapterName].add( dbName, mClass, records).then( function () {
       if (createLog) console.log( records.length +" "+ mClass.Name +"(s) added.");
       if (typeof resolve === "function") resolve();
@@ -141,7 +148,23 @@ sTORAGEmANAGER.prototype.retrieveAll = function (mc) {
       dbName = this.adapter.dbName;
   return new Promise( function (resolve) {
     sTORAGEmANAGER.adapters[adapterName].retrieveAll( dbName, mc)
-    .then( resolve);
+    .then( function (records) {
+      var i=0, newObj=null;
+      if (this.createLog) {
+        console.log( records.length +" "+ mcName +" records retrieved.")
+      }
+      if (this.validateAfterRetrieve) {
+        for (i=0; i < records.length; i++) {
+          try {
+            newObj = new mc( records[i]);
+          } catch (e) {
+            if (e instanceof ConstraintViolation) {
+              console.log( e.constructor.name +": "+ e.message);
+            } else console.log( e.name +": "+ e.message);
+          }
+        }
+      }
+    }).then( resolve);
   });
 };
 /**
@@ -400,7 +423,7 @@ sTORAGEmANAGER.adapters["LocalStorage"] = {
   clearTable: function (dbName, mc) {
   //------------------------------------------------
     return new Promise( function (resolve) {
-      var tableName = util.class2TableName( mc.Name);
+      var tableName = mc.tableName || util.class2TableName( mc.Name);
       mc.instances = {};
       try {
         localStorage[tableName] = JSON.stringify({});
@@ -417,9 +440,9 @@ sTORAGEmANAGER.adapters["LocalStorage"] = {
     return new Promise( function (resolve) {
       Object.keys( cLASS).forEach( function (key) {
         var tableName="";
-        if (cLASS[key].instances) {
+        if (!cLASS[key].isComplexDatatype && Object.keys( cLASS[key].instances).length > 0) {
           cLASS[key].instances = {};
-          tableName = util.class2TableName( cLASS[key].Name);
+          tableName = mc.tableName || util.class2TableName( cLASS[key].Name);
           try {
             localStorage[tableName] = JSON.stringify({});
           } catch (e) {

@@ -2,13 +2,12 @@
  * @fileOverv  Contains various v functions for managing quizzes
  * @author Gerd Wagner
  */
-pl.v.quizzes.manage = {
+qz.v.quizzes.manage = {
   /**
    * Set up the quiz data management UI
    */
   setupUserInterface: function () {
-    window.addEventListener("beforeunload", pl.v.quizzes.manage.exit);
-    pl.v.quizzes.manage.refreshUI();
+    qz.v.quizzes.manage.refreshUI();
   },
   /**
    * exit the Manage Quizzes UI page
@@ -20,18 +19,71 @@ pl.v.quizzes.manage = {
    * refresh the Manage Quizzes UI
    */
   refreshUI: function () {
-    // show the manage quiz UI and hide the other UIs
-    document.getElementById("Quiz-M").style.display = "block";
-    document.getElementById("Quiz-R").style.display = "none";
-    document.getElementById("Quiz-C").style.display = "none";
-    document.getElementById("Quiz-U").style.display = "none";
-    document.getElementById("Quiz-D").style.display = "none";
+    document.getElementById("Quiz-Take").style.display = "none";
+    document.getElementById("Quiz-Manage").style.display = "block";
   }
 };
 /**********************************************
- * Use case List Quizzes
+ * Use case TakeQuiz
  **********************************************/
-pl.v.quizzes.list = {
+qz.v.quizzes.takeQuiz = {
+  setupUserInterface: function () {
+    var formEl = document.querySelector("section#Quiz-Take > form"),
+        quizSelectEl = formEl.elements["selectQuiz"];
+    quizSelectEl.addEventListener("change",
+        qz.v.quizzes.takeQuiz.handleQuizSelectChangeEvent);
+    // set up the quiz selection list
+    dom.fillSelectWithOptionsFromEntityMap( quizSelectEl, qz.Quiz.instances,
+        {displayProp:"title"});
+    document.getElementById("Quiz-Manage").style.display = "none";
+    document.getElementById("Quiz-Take").style.display = "block";
+  },
+  handleQuizSelectChangeEvent: function () {
+    var formEl = document.querySelector("section#Quiz-Take > form"),
+        quizId = formEl.selectQuiz.value, quiz=null,
+        questionsEl = document.getElementById("questions"),
+        questEl = null;
+    if (quizId) {
+      quiz = qz.Quiz.instances[quizId];
+      quiz.questions.forEach( function (quest, seqNo) {
+        var question = quest instanceof qz.Question ? quest : qz.Question.instances[quest],
+            choiceCtrlType = question.hasManyCorrectAnswers ? "checkbox" : "radio",
+            divEl = null;
+        var totalAnswerTextLength = question.answerOptions.reduce( function (acc,ansOpt) {
+              return acc + ansOpt.answerText.length;
+            }, 0);
+        questEl = dom.createElement("div", {id: question.id, classValues:"question"});
+        questionsEl.appendChild( questEl);
+        questEl.appendChild( dom.createElement("p", {content: "<b>Q"+ (seqNo+1) +"</b>: "+ question.questionText}));
+        if (totalAnswerTextLength < 40) {
+          divEl = dom.createElement("div", {classValues:"fldGrp"});
+          question.answerOptions.forEach( function (ansOpt,i) {
+            divEl.appendChild( dom.createLabeledChoiceControl( choiceCtrlType,
+                "answerForQuestion" + question.id, i, ansOpt.answerText));
+          });
+          questEl.appendChild( divEl);
+        } else {
+          question.answerOptions.forEach( function (ansOpt,i) {
+            divEl = dom.createElement("div", {classValues:"fld"});
+            divEl.appendChild( dom.createLabeledChoiceControl( choiceCtrlType,
+                "answerForQuestion" + question.id, i, ansOpt.answerText));
+            questEl.appendChild( divEl);
+          });
+        }
+        document.querySelector("section#Quiz-Take > form button[type='submit']").style.display = "inline";
+      })
+    } else {
+      formEl.reset();
+      formEl.selectQuiz.selectedIndex = 0;
+      questionsEl.innerHTML = "";
+      document.querySelector("section#Quiz-Take > form button[type='submit']").style.display = "none";
+    }
+  }
+};
+/**********************************************
+ * Use case Retrieve/List Quizzes
+ **********************************************/
+qz.v.quizzes.retrieveAndListAll = {
   setupUserInterface: function () {
     var tableBodyEl = document.querySelector(
         "section#Quiz-R>table>tbody"), str = "";
@@ -56,7 +108,7 @@ pl.v.quizzes.list = {
 /**********************************************
  * Use case Create Quiz
  **********************************************/
-pl.v.quizzes.create = {
+qz.v.quizzes.create = {
   /**
    * initialize the quizzes.create form
    */
@@ -123,7 +175,7 @@ pl.v.quizzes.create = {
 /**********************************************
  * Use case Update Quiz
  **********************************************/
-pl.v.quizzes.update = {
+qz.v.quizzes.update = {
   /**
    * Initialize the update quizzes UI/form. Notice that the Association List
    * Widget for associated authors is left empty initially.
@@ -229,7 +281,7 @@ pl.v.quizzes.update = {
 /**********************************************
  * Use case Delete Quiz
  **********************************************/
-pl.v.quizzes.destroy = {
+qz.v.quizzes.destroy = {
   /**
    * initialize the quizzes.destroy form
    */

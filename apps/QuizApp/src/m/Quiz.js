@@ -2,11 +2,14 @@
  * Object type Quiz
  * @class
  */
-var Quiz = new cLASS({
+qz.Quiz = new cLASS({
   Name: "Quiz",
+  tableName: "quizzes",  // irregular plural form
   properties: {
-    "id": {range:"Integer", label:"Quiz ID"},
-    "titleTextItem": {range:"TextItem"},
-    "questions": {range:"Question", maxCard: Infinity, isOrdered: true}
+    "id": {range:"AutoNumber", label:"Quiz ID"},
+    "title": {range:"NonEmptyString"},
+    "titleTextItemNo": {range:"PositiveInteger", optional: true},
+    "questions": {range:"Question", maxCard: Infinity, ordered: true}
   }
 });
+qz.Quiz.idCounter = 0;

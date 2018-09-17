@@ -2,13 +2,13 @@
  * @fileOverview  Contains various view functions for managing quizzes
  * @author Gerd Wagner
  */
-pl.v.questions.manage = {
+qz.v.questions.manage = {
   /**
    * Set up the quiz data management UI
    */
   setupUserInterface: function () {
-    window.addEventListener("beforeunload", pl.view.quizzes.manage.exit);
-    pl.view.quizzes.manage.refreshUI();
+    window.addEventListener("beforeunload", qz.view.quizzes.manage.exit);
+    qz.view.quizzes.manage.refreshUI();
   },
   /**
    * exit the Manage Quizs UI page
@@ -31,7 +31,7 @@ pl.v.questions.manage = {
 /**********************************************
  * Use case List Quizs
  **********************************************/
-pl.v.questions.list = {
+qz.v.questions.list = {
   setupUserInterface: function () {
     var tableBodyEl = document.querySelector(
         "section#Quiz-R>table>tbody");
@@ -57,7 +57,7 @@ pl.v.questions.list = {
 /**********************************************
  * Use case Create Quiz
  **********************************************/
-pl.v.quizzes.create = {
+qz.v.quizzes.create = {
   /**
    * initialize the quizzes.create form
    */
@@ -123,7 +123,7 @@ pl.v.quizzes.create = {
 /**********************************************
  * Use case Update Quiz
  **********************************************/
-pl.v.quizzes.update = {
+qz.v.quizzes.update = {
   /**
    * Initialize the update quizzes UI/form. Notice that the Association List
    * Widget for associated authors is left empty initially.
@@ -229,7 +229,7 @@ pl.v.quizzes.update = {
 /**********************************************
  * Use case Delete Quiz
  **********************************************/
-pl.v.quizzes.destroy = {
+qz.v.quizzes.destroy = {
   /**
    * initialize the quizzes.destroy form
    */
