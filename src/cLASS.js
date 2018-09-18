@@ -51,7 +51,7 @@ function cLASS (classSlots) {
     // assign own properties
     Object.keys( propDefs).forEach( function (p) {
       var range = propDefs[p].range, Class=null,
-          val, rangeTypes=[], i=0, objRef=null, validationResult=null;
+          val, rangeTypes=[], i=0, validationResult=null;
       if (typeof instanceSlots === "object" && instanceSlots[p]) {
         // property p has an initialization slot
         val = instanceSlots[p];
@@ -78,28 +78,26 @@ function cLASS (classSlots) {
             this[p] = cLASS[range].instances[String(val)] || val;
           }
         } else this[p] = val;
-      } else if (propDefs[p].initialValue !== undefined) {
-        // no initialization slot, assign initial value
+      } else if (propDefs[p].initialValue !== undefined) {  // assign initial value
         if (typeof propDefs[p].initialValue === "function") {
           propsWithInitialValFunc.push(p);
         } else this[p] = propDefs[p].initialValue;
-      } else if (range === "AutoNumber") {
-        // generate auto-ID
+      } else if (p === "id" && range === "AutoNumber") {    // assign auto-ID
         if (typeof this.constructor.getAutoId === "function") this[p] = this.constructor.getAutoId();
         else if (this.constructor.idCounter !== undefined) this[p] = ++this.constructor.idCounter;
-      } else if (!propDefs[p].optional) {
-        // assign default value to mandatory properties without an initialization slot
+      } else if (!propDefs[p].optional) {  // assign default value to mandatory properties
         if (cLASS.isIntegerType(range) || cLASS.isDecimalType(range)) {
           this[p] = 0;
         } else if (range === "String") {
           this[p] = "";
         } else if (range === "Boolean") {
           this[p] = false;
-        } else if (typeof range === "string" && cLASS[range] ||
-            typeof range === "object" && ["Array", "ArrayList"].includes(range["dataType"])) {
-          this[p] = [];
-        } else if (typeof range === "object" && range["dataType"] === "Map") {
-          this[p] = {};
+        } else if (typeof range === "object") {
+          if (["Array", "ArrayList"].includes(range.dataType)) {
+            this[p] = [];
+          } else if (range["dataType"] === "Map") {
+            this[p] = {};
+          }
         }
       }
       // initialize historical properties
@@ -600,10 +598,15 @@ cLASS.isIntegerType = function (T) {
        } else if (typeof range === "string" && cLASS[range]) {
          valuesToCheck.forEach( function (v, i) {
            var keys=[], propDefs={};
-           // is v an instance of an entity type?
-           if (v instanceof cLASS[range] && !cLASS[range].isComplexDatatype) {
-             v = valuesToCheck[i] = v.id;  // convert to IdRef
-           } else if (typeof v === "object" && cLASS[range].isComplexDatatype) {
+           if (!cLASS[range].isComplexDatatype && !(v instanceof cLASS[range])) {
+             // convert IdRef to object reference
+             if (cLASS[range].instances[String(v)]) {
+               v = valuesToCheck[i] = cLASS[range].instances[String(v)];
+             } else if (optParams && optParams.checkRefInt) {
+               constrVio = new ReferentialIntegrityConstraintViolation("The value " + v +
+                   " of property '"+ fld +"' is not an ID of any " + range + " object!");
+             }
+           } else if (cLASS[range].isComplexDatatype && typeof v === "object") {
              // v is an untyped record that must comply with the complex datatype
              keys = Object.keys(v);
              propDefs = cLASS[range].properties;
@@ -623,6 +626,7 @@ cLASS.isIntegerType = function (T) {
                    " must be an instance of "+ range +" or a compatible record!"+
                    JSON.stringify(v) + " is not admissible!");
              }
+/* DROP
            } else {  // v may be a (numeric or string) ID ref
              if (typeof v === "string") {
                if (!isNaN( parseInt(v))) v = valuesToCheck[i] = parseInt(v);
@@ -630,12 +634,7 @@ cLASS.isIntegerType = function (T) {
                constrVio = new RangeConstraintViolation("The value (" + JSON.stringify(v) +
                    ") of property '" +fld + "' is neither an integer nor a string!");
              }
-           }
-           if (optParams && optParams.checkRefInt) {
-             if (!cLASS[range].instances[String(v)]) {
-               constrVio = new ReferentialIntegrityConstraintViolation("The value " + v +
-                   " of property '"+ fld +"' is not an ID of any " + range + " object!");
-             }
+*/
            }
          });
        } else if (typeof range === "string" && range.includes("|")) {
@@ -666,49 +665,49 @@ cLASS.isIntegerType = function (T) {
            }
          });
        } else if (typeof range === "object" && range.dataType !== undefined) {
-           // the range is a (collection) datatype declaration record
-           valuesToCheck.forEach( function (v) {
-             var i = 0;
-             if (typeof v !== "object") {
+         // the range is a (collection) datatype declaration record
+         valuesToCheck.forEach( function (v) {
+           var i = 0;
+           if (typeof v !== "object") {
+             constrVio = new RangeConstraintViolation("The value of " + fld +
+                 " must be an object! " + JSON.stringify(v) + " is not admissible!");
+           }
+           switch (range.dataType) {
+           case "Array":
+             if (!Array.isArray(v)) {
                constrVio = new RangeConstraintViolation("The value of " + fld +
-                   " must be an object! " + JSON.stringify(v) + " is not admissible!");
+                   " must be an array! " + JSON.stringify(v) + " is not admissible!");
+               break;
              }
-             switch (range.dataType) {
-               case "Array":
-                 if (!Array.isArray(v)) {
-                   constrVio = new RangeConstraintViolation("The value of " + fld +
-                       " must be an array! " + JSON.stringify(v) + " is not admissible!");
-                   break;
-                 }
-                 if (v.length !== range.size) {
-                   constrVio = new RangeConstraintViolation("The value of " + fld +
-                       " must be an array of length " + range.size + "! " + JSON.stringify(v) + " is not admissible!");
-                   break;
-                 }
-                 for (i = 0; i < v.length; i++) {
-                   if (!cLASS.isOfType(v[i], range.itemType)) {
-                     constrVio = new RangeConstraintViolation("The items of " + fld +
-                         " must be of type " + range.itemType + "! " + JSON.stringify(v) +
-                         " is not admissible!");
-                   }
-                 }
-                 break;
-               case "ArrayList":
-                 if (!Array.isArray(v)) {
-                   constrVio = new RangeConstraintViolation("The value of " + fld +
-                       " must be an array! " + JSON.stringify(v) + " is not admissible!");
-                   break;
-                 }
-                 for (i = 0; i < v.length; i++) {
-                   if (!cLASS.isOfType(v[i], range.itemType)) {
-                     constrVio = new RangeConstraintViolation("The items of " + fld +
-                         " must be of type " + range.itemType + "! " + JSON.stringify(v) +
-                         " is not admissible!");
-                   }
-                 }
-                 break;
+             if (v.length !== range.size) {
+               constrVio = new RangeConstraintViolation("The value of " + fld +
+                   " must be an array of length " + range.size + "! " + JSON.stringify(v) + " is not admissible!");
+               break;
              }
-           });
+             for (i = 0; i < v.length; i++) {
+               if (!cLASS.isOfType(v[i], range.itemType)) {
+                 constrVio = new RangeConstraintViolation("The items of " + fld +
+                     " must be of type " + range.itemType + "! " + JSON.stringify(v) +
+                     " is not admissible!");
+               }
+             }
+             break;
+           case "ArrayList":
+             if (!Array.isArray(v)) {
+               constrVio = new RangeConstraintViolation("The value of " + fld +
+                   " must be an array! " + JSON.stringify(v) + " is not admissible!");
+               break;
+             }
+             for (i = 0; i < v.length; i++) {
+               if (!cLASS.isOfType(v[i], range.itemType)) {
+                 constrVio = new RangeConstraintViolation("The items of " + fld +
+                     " must be of type " + range.itemType + "! " + JSON.stringify(v) +
+                     " is not admissible!");
+               }
+             }
+             break;
+           }
+         });
        } else if (range === Object) {
          valuesToCheck.forEach(function (v) {
            if (!(v instanceof Object)) {

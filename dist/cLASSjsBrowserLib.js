@@ -548,7 +548,7 @@ eNUMERATION.instances = {};
  ******************************************************************************/
 /* globals cLASS */
 function cLASS (classSlots) {
-  var propDs = classSlots.properties || {},  // property declarations
+  var propDefs = classSlots.properties || {},  // property declarations
       methods = classSlots.methods || {},
       supertypeName = classSlots.supertypeName,
       superclass=null, constr=null,
@@ -557,8 +557,8 @@ function cLASS (classSlots) {
   if (supertypeName && !cLASS[supertypeName]) {
     throw "Specified supertype "+ supertypeName +" has not been defined!";
   }
-  if (!Object.keys( propDs).every( function (p) {
-        return (propDs[p].range !== undefined);
+  if (!Object.keys( propDefs).every( function (p) {
+        return (propDefs[p].range !== undefined);
       }) ) {
     throw "No range defined for some property of class "+ classSlots.Name +" !";
   }
@@ -569,67 +569,74 @@ function cLASS (classSlots) {
       cLASS[supertypeName].call( this, instanceSlots);
     }
     // assign own properties
-    Object.keys( propDs).forEach( function (p) {
-      var range = propDs[p].range,
-          val, rangeClasses=[], i=0, objRef=null, validationResult=null;
+    Object.keys( propDefs).forEach( function (p) {
+      var range = propDefs[p].range, Class=null,
+          val, rangeTypes=[], i=0, validationResult=null;
       if (typeof instanceSlots === "object" && instanceSlots[p]) {
         // property p has an initialization slot
         val = instanceSlots[p];
-        validationResult = cLASS.check( p, propDs[p], val);
+        validationResult = cLASS.check( p, propDefs[p], val);
         if (!(validationResult instanceof NoConstraintViolation)) throw validationResult;
         // is range a class (or class disjunction)?
         if (typeof range === "string" && typeof val !== "object" &&
             (cLASS[range] || range.includes("|"))) {
           if (range.includes("|")) {
-            rangeClasses = range.split("|");
-            for (i=0; i < rangeClasses.length; i++) {
-              objRef = cLASS[rangeClasses[i]].instances[String(val)];
-              // convert IdRef to object reference
-              if (objRef) { this[p] = objRef; break;}
+            rangeTypes = range.split("|");
+            for (i=0; i < rangeTypes.length; i++) {
+              Class = cLASS[rangeTypes[i]];
+              if (Class) {  // type disjunct is a cLASS
+                if (Class.instances[String(val)])  {
+                  // convert IdRef to object reference
+                  this[p] = Class.instances[String(val)];
+                  break;
+                }
+              }
             }
+            if (!this[p]) this[p] = val;
           } else {  // range is a class
             // convert IdRef to object reference
             this[p] = cLASS[range].instances[String(val)] || val;
           }
         } else this[p] = val;
-        delete instanceSlots[p];
-      } else if (propDs[p].initialValue !== undefined) {
-        // no initialization slot, assign initial value
-        if (typeof propDs[p].initialValue === "function") {
+      } else if (propDefs[p].initialValue !== undefined) {  // assign initial value
+        if (typeof propDefs[p].initialValue === "function") {
           propsWithInitialValFunc.push(p);
-        } else this[p] = propDs[p].initialValue;
-      } else if (!propDs[p].optional) {
-        // assign default value to mandatory properties without an initialization slot
+        } else this[p] = propDefs[p].initialValue;
+      } else if (p === "id" && range === "AutoNumber") {    // assign auto-ID
+        if (typeof this.constructor.getAutoId === "function") this[p] = this.constructor.getAutoId();
+        else if (this.constructor.idCounter !== undefined) this[p] = ++this.constructor.idCounter;
+      } else if (!propDefs[p].optional) {  // assign default value to mandatory properties
         if (cLASS.isIntegerType(range) || cLASS.isDecimalType(range)) {
           this[p] = 0;
         } else if (range === "String") {
           this[p] = "";
         } else if (range === "Boolean") {
           this[p] = false;
-        } else if (typeof range === "string" && cLASS[range] ||
-            typeof range === "object" && ["Array", "ArrayList"].includes(range["dataType"])) {
-          this[p] = [];
-        } else if (typeof range === "object" && range["dataType"] === "Map") {
-          this[p] = {};
+        } else if (typeof range === "object") {
+          if (["Array", "ArrayList"].includes(range.dataType)) {
+            this[p] = [];
+          } else if (range["dataType"] === "Map") {
+            this[p] = {};
+          }
         }
       }
       // initialize historical properties
-      if (propDs[p].historySize) {
+      if (propDefs[p].historySize) {
         this.history = this.history || {};  // a map
-        this.history[p] = propDs[p].decimalPlaces ?
-            new cLASS.RingBuffer( propDs[p].range, propDs[p].historySize,
-                {decimalPlaces: propDs[p].decimalPlaces}) :
-            new cLASS.RingBuffer( propDs[p].range, propDs[p].historySize);
+        this.history[p] = propDefs[p].decimalPlaces ?
+            new cLASS.RingBuffer( propDefs[p].range, propDefs[p].historySize,
+                {decimalPlaces: propDefs[p].decimalPlaces}) :
+            new cLASS.RingBuffer( propDefs[p].range, propDefs[p].historySize);
       }
     }, this);
     // call the functions for initial value expressions
     propsWithInitialValFunc.forEach( function (p) {
-      this[p] = propDs[p].initialValue.call(this);
+      this[p] = propDefs[p].initialValue.call(this);
     }, this);
     // assign remaining fields not defined as properties by the object's class
     if (typeof( instanceSlots) === "object") {
       Object.keys( instanceSlots).forEach( function (f) {
-        this[f] = instanceSlots[f];
+        if (!propDefs[f]) this[f] = instanceSlots[f];
       }, this);
     }
     // is the class neither a complex DT nor abstract and does the object have an ID slot?
@@ -645,6 +652,7 @@ function cLASS (classSlots) {
   if (classSlots.isAbstract) constr.isAbstract = true;
   if (classSlots.shortLabel) constr.shortLabel = classSlots.shortLabel;
   if (classSlots.primaryKey) constr.primaryKey = classSlots.primaryKey;
+  if (classSlots.tableName) constr.tableName = classSlots.tableName;
   if (supertypeName) {
     constr.supertypeName = supertypeName;
     superclass = cLASS[supertypeName];
@@ -654,11 +662,11 @@ function cLASS (classSlots) {
     // merge superclass property declarations with own property declarations
     constr.properties = Object.create( superclass.properties);
    //  assign own property declarations, possibly overriding super-props																		 
-    Object.keys( propDs).forEach( function (p) {
-      constr.properties[p] = propDs[p];
+    Object.keys( propDefs).forEach( function (p) {
+      constr.properties[p] = propDefs[p];
     });
   } else {  // if class is root class
-    constr.properties = propDs;
+    constr.properties = propDefs;
     /***************************************************/
     constr.prototype.set = function ( prop, val) {
     /***************************************************/
@@ -843,7 +851,7 @@ function cLASS (classSlots) {
   * @return {boolean}
   */
 cLASS.isIntegerType = function (T) {
-  return typeof(T)==="string" && T.includes('Integer') ||
+  return ["Integer","PositiveInteger","AutoNumber","NonNegativeInteger"].includes(T) ||
       T instanceof eNUMERATION;
 };
  /**
@@ -854,8 +862,7 @@ cLASS.isIntegerType = function (T) {
   * @return {boolean}
   */
  cLASS.isDecimalType = function (T) {
-   return typeof(T)==="string" &&
-       (T.includes("Decimal") || T.includes("UnitInterval"));
+   return ["Number","Decimal","Percent","ClosedUnitInterval","OpenUnitInterval"].includes(T);
  };
  /**
   * Constants
@@ -911,12 +918,17 @@ cLASS.isIntegerType = function (T) {
      if (Array.isArray( val) ) {
        valuesToCheck = val;
      } else if (typeof range === "string" && cLASS[range]) {
-       valuesToCheck = Object.keys( val).map( function (id) {
-         return val[id];
-       });
+       if (!decl.ordered) {
+         valuesToCheck = Object.keys( val).map( function (id) {
+           return val[id];
+         });
+       } else {
+         return new RangeConstraintViolation("Values for the ordered property "+ fld +
+             " must be arrays, and not maps!");
+       }
      } else {
        return new RangeConstraintViolation("Values for "+ fld +
-           " must be arrays or maps!");
+           " must be arrays or maps of IDs to cLASS instances!");
      }
    }
    // convert integer strings to integers
@@ -1000,6 +1012,16 @@ cLASS.isIntegerType = function (T) {
        });
        break;
      case "AutoNumber":
+       if (valuesToCheck.length === 1) {
+         if (!Number.isInteger( valuesToCheck[0]) || valuesToCheck[0] < 1) {
+           constrVio = new RangeConstraintViolation("The value of "+ fld +
+               " must be a positive integer!");
+         }
+       } else {
+         constrVio = new RangeConstraintViolation("The value of "+ fld +
+             " must not be a collection like "+ valuesToCheck);
+       }
+       break;
      case "PositiveInteger":
        valuesToCheck.forEach( function (v) {
          if (!Number.isInteger(v) || v < 1) {
@@ -1053,15 +1075,25 @@ cLASS.isIntegerType = function (T) {
          }
        });
        break;
-     case "DateTime":
+     case "Date":
        valuesToCheck.forEach( function (v,i) {
          if (typeof v === "string" &&
-             (/\d{4}-(0\d|1[0-2])-([0-2]\d|3[0-1])/.test(v) ||
-             !isNaN( Date.parse(v)))) {
+             /\d{4}-(0\d|1[0-2])-([0-2]\d|3[0-1])/.test(v) && !isNaN( Date.parse(v))) {
            valuesToCheck[i] = new Date(v);
          } else if (!(v instanceof Date)) {
            constrVio = new RangeConstraintViolation("The value of "+ fld +
                " must be either a Date value or an ISO date string. "+
+               v +" is not admissible!");
+         }
+       });
+       break;
+     case "DateTime":
+       valuesToCheck.forEach( function (v,i) {
+         if (typeof v === "string" && !isNaN( Date.parse(v))) {
+           valuesToCheck[i] = new Date(v);
+         } else if (!(v instanceof Date)) {
+           constrVio = new RangeConstraintViolation("The value of "+ fld +
+               " must be either a Date value or an ISO date-time string. "+
                v +" is not admissible!");
          }
        });
@@ -1083,84 +1115,124 @@ cLASS.isIntegerType = function (T) {
                  " is not in value list "+ range.toString());
            }
          });
-       } else if (!(typeof range === "string" && (cLASS[range] || range.includes("|")))) {
-         if (typeof range === "object" && range.dataType !== undefined) {
-           // the range is a (collection) datatype declaration record
-           valuesToCheck.forEach(function (v) {
-             var i = 0;
-             if (typeof v !== "object") {
+       } else if (typeof range === "string" && cLASS[range]) {
+         valuesToCheck.forEach( function (v, i) {
+           var keys=[], propDefs={};
+           if (!cLASS[range].isComplexDatatype && !(v instanceof cLASS[range])) {
+             // convert IdRef to object reference
+             if (cLASS[range].instances[String(v)]) {
+               v = valuesToCheck[i] = cLASS[range].instances[String(v)];
+             } else if (optParams && optParams.checkRefInt) {
+               constrVio = new ReferentialIntegrityConstraintViolation("The value " + v +
+                   " of property '"+ fld +"' is not an ID of any " + range + " object!");
+             }
+           } else if (cLASS[range].isComplexDatatype && typeof v === "object") {
+             // v is an untyped record that must comply with the complex datatype
+             keys = Object.keys(v);
+             propDefs = cLASS[range].properties;
+             // test if all mandatory properties occur in v and if all fields of v are properties
+             if (Object.keys( propDefs).every( function (p) {return !!propDefs[p].optional || p in v;}) &&
+                 keys.every( function (fld) {return !!propDefs[fld];})) {
+               keys.forEach( function (p) {
+                 var validationResult = cLASS.check( p, propDefs[p], v[p]);
+                 if (validationResult instanceof NoConstraintViolation) {
+                   this[p] = validationResult.checkedValue;
+                 } else {
+                   throw validationResult;
+                 }
+               })
+             } else {
                constrVio = new RangeConstraintViolation("The value of " + fld +
-                   " must be an object! " + JSON.stringify(v) + " is not admissible!");
+                   " must be an instance of "+ range +" or a compatible record!"+
+                   JSON.stringify(v) + " is not admissible!");
              }
-             switch (range.dataType) {
-               case "Array":
-                 if (!Array.isArray(v)) {
-                   constrVio = new RangeConstraintViolation("The value of " + fld +
-                       " must be an array! " + JSON.stringify(v) + " is not admissible!");
-                   break;
-                 }
-                 if (v.length !== range.size) {
-                   constrVio = new RangeConstraintViolation("The value of " + fld +
-                       " must be an array of length " + range.size + "! " + JSON.stringify(v) + " is not admissible!");
-                   break;
-                 }
-                 for (i = 0; i < v.length; i++) {
-                   if (!cLASS.isOfType(v[i], range.itemType)) {
-                     constrVio = new RangeConstraintViolation("The items of " + fld +
-                         " must be of type " + range.itemType + "! " + JSON.stringify(v) +
-                         " is not admissible!");
-                   }
-                 }
-                 break;
-               case "ArrayList":
-                 if (!Array.isArray(v)) {
-                   constrVio = new RangeConstraintViolation("The value of " + fld +
-                       " must be an array! " + JSON.stringify(v) + " is not admissible!");
-                   break;
-                 }
-                 for (i = 0; i < v.length; i++) {
-                   if (!cLASS.isOfType(v[i], range.itemType)) {
-                     constrVio = new RangeConstraintViolation("The items of " + fld +
-                         " must be of type " + range.itemType + "! " + JSON.stringify(v) +
-                         " is not admissible!");
-                   }
-                 }
-                 break;
+/* DROP
+           } else {  // v may be a (numeric or string) ID ref
+             if (typeof v === "string") {
+               if (!isNaN( parseInt(v))) v = valuesToCheck[i] = parseInt(v);
+             } else if (!Number.isInteger(v)) {
+               constrVio = new RangeConstraintViolation("The value (" + JSON.stringify(v) +
+                   ") of property '" +fld + "' is neither an integer nor a string!");
              }
-           });
-         } else if (range === Object) {
-           valuesToCheck.forEach(function (v) {
-             if (!(v instanceof Object)) {
+*/
+           }
+         });
+       } else if (typeof range === "string" && range.includes("|")) {
+         valuesToCheck.forEach( function (v, i) {
+           var rangeTypes=[];
+           rangeTypes = range.split("|");
+           if (typeof v === "object") {
+             if (!rangeTypes.some( function (rc) {
+               return v instanceof cLASS[rc];
+             })) {
+               constrVio = ReferentialIntegrityConstraintViolation("The object " + JSON.stringify(v) +
+                   " is not an instance of any class from " + range + "!");
+             } else {
+               v = valuesToCheck[i] = v.id;  // convert to IdRef
+             }
+           } else if (Number.isInteger(v)) {
+             if (optParams && optParams.checkRefInt) {
+               if (!cLASS[range].instances[String(v)]) {
+                 constrVio = new ReferentialIntegrityConstraintViolation("The value " + v +
+                     " of property '"+ fld +"' is not an ID of any " + range + " object!");
+               }
+             }
+           } else if (typeof v === "string") {
+             if (!isNaN( parseInt(v))) v = valuesToCheck[i] = parseInt(v);
+           } else {
+             constrVio = new RangeConstraintViolation("The value (" + v + ") of property '" +
+                 fld + "' is neither an integer nor a string!");
+           }
+         });
+       } else if (typeof range === "object" && range.dataType !== undefined) {
+         // the range is a (collection) datatype declaration record
+         valuesToCheck.forEach( function (v) {
+           var i = 0;
+           if (typeof v !== "object") {
+             constrVio = new RangeConstraintViolation("The value of " + fld +
+                 " must be an object! " + JSON.stringify(v) + " is not admissible!");
+           }
+           switch (range.dataType) {
+           case "Array":
+             if (!Array.isArray(v)) {
                constrVio = new RangeConstraintViolation("The value of " + fld +
-                   " must be a JS object! " + JSON.stringify(v) + " is not admissible!");
+                   " must be an array! " + JSON.stringify(v) + " is not admissible!");
+               break;
              }
-           });
-         }
-       } else if (optParams && optParams.checkRefInt) {
-         // the range is a cLASS or a cLASS disjunction
-         valuesToCheck.forEach(function (v, i) {
-           var rangeClasses = [];
-           if (cLASS[range]) {
-             if (v instanceof cLASS[range]) v = valuesToCheck[i] = v.id;  // convert to IdRef
-             else if (typeof v === "string") v = valuesToCheck[i] = parseInt(v);
-             // assuming that the ID reference represents an integer (ID)
-             if (!Number.isInteger(v)) {
-               constrVio = new RangeConstraintViolation("The value (" + val + ") of property '" +
-                   fld + "' is not an integer!");
+             if (v.length !== range.size) {
+               constrVio = new RangeConstraintViolation("The value of " + fld +
+                   " must be an array of length " + range.size + "! " + JSON.stringify(v) + " is not admissible!");
+               break;
              }
-             if (!cLASS[range].instances[String(v)]) {
-               constrVio = new ReferentialIntegrityConstraintViolation("The value " + v + " of property '" +
-                   fld + "' is not an ID of any " + range + " object!");
+             for (i = 0; i < v.length; i++) {
+               if (!cLASS.isOfType(v[i], range.itemType)) {
+                 constrVio = new RangeConstraintViolation("The items of " + fld +
+                     " must be of type " + range.itemType + "! " + JSON.stringify(v) +
+                     " is not admissible!");
+               }
              }
-           } else {  // a cLASS disjunction
-             rangeClasses = range.split("|");
-             // check referential integrity: val must be in some range class
-             if (!rangeClasses.some(function (rc) {
-                   return cLASS[rc].instances[String(v)];
-                 })) {
-               constrVio = ReferentialIntegrityConstraintViolation("The value " + val + " does not reference any of " +
-                   range + "!");
+             break;
+           case "ArrayList":
+             if (!Array.isArray(v)) {
+               constrVio = new RangeConstraintViolation("The value of " + fld +
+                   " must be an array! " + JSON.stringify(v) + " is not admissible!");
+               break;
              }
+             for (i = 0; i < v.length; i++) {
+               if (!cLASS.isOfType(v[i], range.itemType)) {
+                 constrVio = new RangeConstraintViolation("The items of " + fld +
+                     " must be of type " + range.itemType + "! " + JSON.stringify(v) +
+                     " is not admissible!");
+               }
+             }
+             break;
+           }
+         });
+       } else if (range === Object) {
+         valuesToCheck.forEach(function (v) {
+           if (!(v instanceof Object)) {
+             constrVio = new RangeConstraintViolation("The value of " + fld +
+                 " must be a JS object! " + JSON.stringify(v) + " is not admissible!");
            }
          });
        }
@@ -1202,7 +1274,7 @@ cLASS.isIntegerType = function (T) {
    /********************************************************
     ***  Check cardinality constraints  *********************
     ********************************************************/
-   if (maxCard > 1) { // (a multi-valued property can be array-valued or map-valued)
+   if (maxCard > 1) { // (a multi-valued property can be array- or map-valued)
      // check minimum cardinality constraint
      if (minCard > 0 && valuesToCheck.length < minCard) {
        return new CardinalityConstraintViolation("A collection of at least "+
@@ -1214,9 +1286,9 @@ cLASS.isIntegerType = function (T) {
            fld +" must not have more than "+ maxCard +" members!");
      }
    }
-   val = maxCard === 1 ? valuesToCheck[0] : valuesToCheck;
+   //val = maxCard === 1 ? valuesToCheck[0] : valuesToCheck;
    // return deserialized value available in validationResult.checkedValue
-   return new NoConstraintViolation( val);
+   return new NoConstraintViolation( maxCard === 1 ? valuesToCheck[0] : valuesToCheck);
  };
  /**
   * Map range datatype to JS datatype.
@@ -1449,7 +1521,7 @@ var dom = {
   createOption: function (slots) {
     var el = document.createElement("option");
     if (slots.text) el.textContent = slots.text;
-    if (slots.value) el.value = slots.value;
+    if (slots.value !== undefined) el.value = slots.value;
     return el;
   },
   /**
@@ -1462,7 +1534,8 @@ var dom = {
    */
   createButton: function (slots) {
     var el = document.createElement("button");
-    el.type = "button";
+    if (!slots.type) el.type = "button";
+    else el.type = slots.type;
     if (slots.id) el.id = slots.id;
     if (slots.name) el.name = slots.name;
     if (slots.classValues) el.className = slots.classValues;
@@ -1500,6 +1573,7 @@ var dom = {
         lblEl = document.createElement("label");
     if (slots.name) inpEl.name = slots.name;
     if (slots.type) inpEl.type = slots.type;
+    else inpEl.type = "text";
     if (slots.value !== undefined) inpEl.value = slots.value;
     if (slots.disabled) inpEl.disabled = "disabled";
     lblEl.textContent = slots.labelText;
@@ -1514,14 +1588,17 @@ var dom = {
   *        slots  The view definition slots.
   * @return {object}
   */
-  createLabeledChoiceControl: function (t,n,v,lbl) {
-    var ccEl = document.createElement("input"),
+  createLabeledChoiceControl: function (t,n,v,lblTxt) {
+    var ctrlEl = document.createElement("input"),
         lblEl = document.createElement("label");
-    ccEl.type = t;
-    ccEl.name = n;
-    ccEl.value = v;
-    lblEl.appendChild( ccEl);
-    lblEl.appendChild( document.createTextNode( lbl));
+    ctrlEl.type = t;
+    ctrlEl.name = n;
+    ctrlEl.value = v;
+    lblEl.appendChild( ctrlEl);
+    lblEl.appendChild( !lblTxt.includes("</") ?
+        document.createTextNode( lblTxt) :
+        dom.createElement("div", {content: lblTxt})
+    );
     return lblEl;
   },
   /**
@@ -1531,24 +1608,21 @@ var dom = {
   *     slots  The view definition slots.
   * @return {object}
   */
-  createLabeledSelectField: function (slots) {
+  createLabeledSelect: function (slots) {
     var selEl = document.createElement("select"),
-        lblEl = document.createElement("label"),
-        containerEl = document.createElement("div");
+        lblEl = document.createElement("label");
     if (slots.name) selEl.name = slots.name;
     if (slots.index !== undefined) selEl.index = slots.index;
     lblEl.textContent = slots.labelText;
-    if (slots.classValues) containerEl.className = slots.classValues;
     lblEl.appendChild( selEl);
-    containerEl.appendChild( lblEl);
-    return containerEl;
+    return lblEl;
   },
   /**
   * Create option elements from an array list of option text strings
   * and insert them into a selection list element
   *
   * @param {object} selEl  A select(ion list) element
-  * @param {object} options  An array list of option text items
+  * @param {object} options  An array list of records or text items
   * @param {object} optPar  A record of optional parameters
   */
   fillSelectWithOptionsFromArrayList: function (selEl, options, optPar) {
@@ -1556,12 +1630,18 @@ var dom = {
     if (!selEl.multiple) {
       selEl.add( dom.createOption({text:" --- ", value:""}), null);
     }
-    options.forEach( function (txt,i) {
-      var optEl = dom.createOption({text: txt, value: i});
+    options.forEach( function (opt,i) {
+      var optEl = null,
+          id = optPar && optPar.primaryKey ? opt[optPar.primaryKey] : opt.id;
+      if (typeof opt === "string") optEl = dom.createOption({text: opt, value: i});
+      else optEl = dom.createOption({
+        text: optPar && optPar.displayProp ? opt[optPar.displayProp] : id,
+        value: id
+      });
       if (selEl.multiple && optPar && optPar.selection &&
           optPar.selection.includes(i+1)) {
         // flag the option element with this value as selected
-        optionEl.selected = true;
+        optEl.selected = true;
       }
       selEl.add( optEl, null);
     });
@@ -1571,7 +1651,7 @@ var dom = {
     * and insert them into a selection list element
     *
     * @param {object} selEl  A select(ion list) element
-    * @param {object} entityMap  A map of option values to option text items
+    * @param {object} entityMap  A map of entity IDs to entity records
     * @param {object} optPar  A record of optional parameters
     */
    fillSelectWithOptionsFromEntityMap: function (selEl, entityMap, optPar) {
@@ -3059,33 +3139,40 @@ sTORAGEmANAGER.prototype.add = function (mClass, rec) {
       createLog = this.createLog,
       checkConstraints = this.validateBeforeSave,
       records=[], validRecords=[];
-  if (!Array.isArray( rec)) records = [rec];
-  else if (typeof rec === "object") records = rec;
-  else throw Error("2nd argument of 'add' must be a record or record list!");
+  if (typeof rec === "object" && !Array.isArray(rec)) {
+    records = [rec];
+  } else if (Array.isArray(rec) && rec.every( function (r) {
+             return typeof r === "object" && !Array.isArray(r)})) {
+    records = rec;
+  } else throw Error("2nd argument of 'add' must be a record or record list!");
   // create auto-IDs if required
   if (mClass.properties.id && mClass.properties.id.range === "AutoNumber") {
-    records.forEach( function (rec) {
-      if (!rec.id) {  // do not overwrite assigned ID values
-        if (typeof mClass.getAutoId === "function") rec.id = mClass.getAutoId();
-        else if (mClass.idCounter !== undefined) rec.id = ++mClass.idCounter;
+    records.forEach( function (r) {
+      if (!r.id) {  // do not overwrite assigned ID values
+        if (typeof mClass.getAutoId === "function") r.id = mClass.getAutoId();
+        else if (mClass.idCounter !== undefined) r.id = ++mClass.idCounter;
       }
     })
   }
   // check constraints before save if required
   if (checkConstraints) {
     records.forEach( function (r) {
-      try {newObj = new mClass( r);}  // check constraints
-      catch (e) {
-        if (e instanceof ConstraintViolation) {
-          console.log( e.constructor.name +": "+ e.message);
-        } else console.log( e);
+      var newObj=null;
+      if (r instanceof mClass) {
+        validRecords.push( r);
+      } else {
+        try {newObj = new mClass( r);}  // check constraints
+        catch (e) {
+          if (e instanceof ConstraintViolation) {
+            console.log( e.constructor.name +": "+ e.message);
+          } else console.log( e);
+        }
+        if (newObj) validRecords.push( newObj);
       }
-      if (newObj) validRecords.push( newObj);
     });
     records = validRecords;
   }
   return new Promise( function (resolve) {
-    var newObj=null, objID="";
     sTORAGEmANAGER.adapters[adapterName].add( dbName, mClass, records).then( function () {
       if (createLog) console.log( records.length +" "+ mClass.Name +"(s) added.");
       if (typeof resolve === "function") resolve();
@@ -3126,7 +3213,23 @@ sTORAGEmANAGER.prototype.retrieveAll = function (mc) {
       dbName = this.adapter.dbName;
   return new Promise( function (resolve) {
     sTORAGEmANAGER.adapters[adapterName].retrieveAll( dbName, mc)
-    .then( resolve);
+    .then( function (records) {
+      var i=0, newObj=null;
+      if (this.createLog) {
+        console.log( records.length +" "+ mcName +" records retrieved.")
+      }
+      if (this.validateAfterRetrieve) {
+        for (i=0; i < records.length; i++) {
+          try {
+            newObj = new mc( records[i]);
+          } catch (e) {
+            if (e instanceof ConstraintViolation) {
+              console.log( e.constructor.name +": "+ e.message);
+            } else console.log( e.name +": "+ e.message);
+          }
+        }
+      }
+    }).then( resolve);
   });
 };
 /**
@@ -3385,7 +3488,7 @@ sTORAGEmANAGER.adapters["LocalStorage"] = {
   clearTable: function (dbName, mc) {
   //------------------------------------------------
     return new Promise( function (resolve) {
-      var tableName = util.class2TableName( mc.Name);
+      var tableName = mc.tableName || util.class2TableName( mc.Name);
       mc.instances = {};
       try {
         localStorage[tableName] = JSON.stringify({});
@@ -3402,9 +3505,9 @@ sTORAGEmANAGER.adapters["LocalStorage"] = {
     return new Promise( function (resolve) {
       Object.keys( cLASS).forEach( function (key) {
         var tableName="";
-        if (cLASS[key].instances) {
+        if (!cLASS[key].isComplexDatatype && Object.keys( cLASS[key].instances).length > 0) {
           cLASS[key].instances = {};
-          tableName = util.class2TableName( cLASS[key].Name);
+          tableName = mc.tableName || util.class2TableName( cLASS[key].Name);
           try {
             localStorage[tableName] = JSON.stringify({});
           } catch (e) {
@@ -3454,7 +3557,7 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
     return new Promise( function (resolve) {
       idb.open( dbName, 1, function (upgradeDb) {
         modelClasses.forEach( function (mc) {
-          var tableName = util.class2TableName( mc.Name),
+          var tableName = mc.tableName || util.class2TableName( mc.Name),
               keyPath = mc.primaryKey || "id";
           if (!upgradeDb.objectStoreNames.contains( tableName)) {
             upgradeDb.createObjectStore( tableName, {keyPath: keyPath});
@@ -3466,12 +3569,11 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
   //------------------------------------------------
   add: function (dbName, mc, records) {
   //------------------------------------------------
-    return new Promise( function (resolve, reject) {
-      var tableName = util.class2TableName( mc.Name);
+    return new Promise( function (resolve) {
+      var tableName = mc.tableName || util.class2TableName( mc.Name);
       idb.open( dbName).then( function (idbCx) {  // idbCx is a DB connection
         var tx = idbCx.transaction( tableName, "readwrite");
         var os = tx.objectStore( tableName);
-        if (!Array.isArray( records)) records = [records];  // single record insertion
         // Promise.all takes a list of promises and resolves if all of them do
         return Promise.all( records.map( function (rec) {return os.add( rec);}))
             .then( function () {return tx.complete;});
@@ -3483,7 +3585,7 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
   retrieve: function (dbName, mc, id) {
   //------------------------------------------------
     return new Promise( function (resolve) {
-      var tableName = util.class2TableName( mc.Name);
+      var tableName = mc.tableName || util.class2TableName( mc.Name);
       idb.open( dbName).then( function (idbCx) {  // idbCx is a DB connection
         var tx = idbCx.transaction( tableName, "readonly");
         var os = tx.objectStore( tableName);
@@ -3498,7 +3600,7 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
   retrieveAll: function (dbName, mc) {
   //------------------------------------------------
     return new Promise( function (resolve) {
-      var tableName = util.class2TableName( mc.Name);
+      var tableName = mc.tableName || util.class2TableName( mc.Name);
       idb.open( dbName).then( function (idbCx) {  // idbCx is a DB connection
         var tx = idbCx.transaction( tableName, "readonly");
         var os = tx.objectStore( tableName);
@@ -3513,7 +3615,7 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
   update: function (dbName, mc, id, slots) {
   //------------------------------------------------
     return new Promise( function (resolve) {
-      var tableName = util.class2TableName( mc.Name);
+      var tableName = mc.tableName || util.class2TableName( mc.Name);
       idb.open( dbName).then( function (idbCx) {  // idbCx is a DB connection
         var tx = idbCx.transaction( tableName, "readwrite");
         var os = tx.objectStore( tableName);
@@ -3528,7 +3630,7 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
   destroy: function (dbName, mc, id) {
   //------------------------------------------------
     return new Promise( function (resolve) {
-      var tableName = util.class2TableName( mc.Name);
+      var tableName = mc.tableName || util.class2TableName( mc.Name);
       idb.open( dbName).then( function (idbCx) {  // idbCx is a DB connection
         var tx = idbCx.transaction( tableName, "readwrite");
         var os = tx.objectStore( tableName);
@@ -3542,7 +3644,7 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
   clearTable: function (dbName, mc) {
   //------------------------------------------------
     return new Promise( function (resolve) {
-      var tableName = util.class2TableName( mc.Name);
+      var tableName = mc.tableName || util.class2TableName( mc.Name);
       idb.open( dbName).then( function (idbCx) {  // idbCx is a DB connection
         var tx = idbCx.transaction( tableName, "readwrite");
         var os = tx.objectStore( tableName);
