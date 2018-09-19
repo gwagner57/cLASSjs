@@ -540,6 +540,7 @@ oBJECTvIEW.prototype.render = function (objViewParentEl) {
         containerEl.appendChild( dom.createButton({
           name: usrAct,
           label: userActions[usrAct].label || util.capitalizeFirstChar( usrAct),
+          title: userActions[usrAct].hint,
           handler: userActions[usrAct]
         }));
         parentEl.appendChild( containerEl);

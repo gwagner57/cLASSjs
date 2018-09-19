@@ -1117,7 +1117,7 @@ cLASS.isIntegerType = function (T) {
          });
        } else if (typeof range === "string" && cLASS[range]) {
          valuesToCheck.forEach( function (v, i) {
-           var keys=[], propDefs={};
+           var recFldNames=[], propDefs={};
            if (!cLASS[range].isComplexDatatype && !(v instanceof cLASS[range])) {
              // convert IdRef to object reference
              if (cLASS[range].instances[String(v)]) {
@@ -1127,16 +1127,16 @@ cLASS.isIntegerType = function (T) {
                    " of property '"+ fld +"' is not an ID of any " + range + " object!");
              }
            } else if (cLASS[range].isComplexDatatype && typeof v === "object") {
-             // v is an untyped record that must comply with the complex datatype
-             keys = Object.keys(v);
+             // v is a record that must comply with the complex datatype
+             recFldNames = Object.keys(v);
              propDefs = cLASS[range].properties;
              // test if all mandatory properties occur in v and if all fields of v are properties
              if (Object.keys( propDefs).every( function (p) {return !!propDefs[p].optional || p in v;}) &&
-                 keys.every( function (fld) {return !!propDefs[fld];})) {
-               keys.forEach( function (p) {
+                 recFldNames.every( function (fld) {return !!propDefs[fld];})) {
+               recFldNames.forEach( function (p) {
                  var validationResult = cLASS.check( p, propDefs[p], v[p]);
                  if (validationResult instanceof NoConstraintViolation) {
-                   this[p] = validationResult.checkedValue;
+                   v[p] = validationResult.checkedValue;
                  } else {
                    throw validationResult;
                  }
@@ -1539,6 +1539,7 @@ var dom = {
     if (slots.id) el.id = slots.id;
     if (slots.name) el.name = slots.name;
     if (slots.classValues) el.className = slots.classValues;
+    if (slots.title) el.title = slots.title;
     if (slots.handler) el.addEventListener( 'click', slots.handler);
     if (slots.content) el.innerHTML = slots.content;
     else el.textContent = slots.label || slots.name;
@@ -2246,6 +2247,7 @@ oBJECTvIEW.prototype.render = function (objViewParentEl) {
         containerEl.appendChild( dom.createButton({
           name: usrAct,
           label: userActions[usrAct].label || util.capitalizeFirstChar( usrAct),
+          title: userActions[usrAct].hint,
           handler: userActions[usrAct]
         }));
         parentEl.appendChild( containerEl);
