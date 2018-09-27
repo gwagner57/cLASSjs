@@ -145,15 +145,17 @@ sTORAGEmANAGER.prototype.retrieve = function (mc, id) {
  */
 sTORAGEmANAGER.prototype.retrieveAll = function (mc) {
   var adapterName = this.adapter.name,
-      dbName = this.adapter.dbName;
+      dbName = this.adapter.dbName,
+      createLog = this.createLog,
+      validateAfterRetrieve = this.validateAfterRetrieve;
   return new Promise( function (resolve) {
     sTORAGEmANAGER.adapters[adapterName].retrieveAll( dbName, mc)
     .then( function (records) {
       var i=0, newObj=null;
-      if (this.createLog) {
-        console.log( records.length +" "+ mcName +" records retrieved.")
+      if (createLog) {
+        console.log( records.length +" "+ mc.Name +" records retrieved.")
       }
-      if (this.validateAfterRetrieve) {
+      if (validateAfterRetrieve) {
         for (i=0; i < records.length; i++) {
           try {
             newObj = new mc( records[i]);
@@ -164,7 +166,8 @@ sTORAGEmANAGER.prototype.retrieveAll = function (mc) {
           }
         }
       }
-    }).then( resolve);
+      resolve( records);
+    })
   });
 };
 /**
