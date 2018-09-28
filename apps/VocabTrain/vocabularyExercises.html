@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Vocabulary Training App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="manifest" href="site.webmanifest">
+  <link rel="apple-touch-icon" href="icon.png">
+   <!-- Place favicon.ico in the root directory -->
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png"/>
+  <link rel="icon" type="image/png" href="favicon-32x32.png" sizes="32x32"/>
+  <link rel="icon" type="image/png" href="favicon-16x16.png" sizes="16x16"/>
+  <link rel="mask-icon" href="safari-pinned-tab.svg" color="#5bbad5"/>
+
+  <link rel="stylesheet" href="css/normalize.min.css">
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="styles.css" />
+
+    <!-- Load polyfills for supporting >=IE9 -->
+  <script src="https://cdn.polyfill.io/v2/polyfill.js?features=Array.from,Array.prototype.find,Array.prototype.includes,DOMTokenList,Element.prototype.after,Element.prototype.before,Element.prototype.classList,Element.prototype.cloneNode,Number.isInteger,Object.keys,Object.values,Promise,String.prototype.includes,console.log,&flags=gated" defer async></script>
+   <!-- Load the Promised IndexedDB library -->
+  <script src="../../lib/idb.js "></script>
+    <!--
+      <script src="../../dist/cLASSjsBrowserLib.js"></script>
+    -->
+    <!-- cLASSjsBrowserLib.js contains the following  -->
+  <script src="../../lib/browserShims.js"></script>
+  <script src="../../lib/util.js"></script>
+  <script src="../../lib/dom.js"></script>
+  <script src="../../lib/errorTypes.js"></script>
+  <script src="../../src/eNUMERATION.js"></script>
+  <script src="../../src/cLASS.js"></script>
+  <script src="../../src/oBJECTvIEW.js"></script>
+  <script src="../../src/storage/sTORAGEmANAGER.js"></script>
+  <script src="../../src/storage/sTORAGEmANAGER_IndexedDB.js"></script>
+
+  <script src="src/c/app.js"></script>
+  <script src="src/v/dictEntries.js"></script>
+  <script src="src/v/learningUnits.js"></script>
+  <script src="src/v/vocExercises.js"></script>
+  <script src="src/c/vocExercises.js"></script>
+  <script src="src/c/dictEntries.js"></script>
+  <script src="src/c/learnUnits.js"></script>
+  <script src="src/m/MeaningVariant.js"></script>
+  <script src="src/m/DictionaryEntry.js"></script>
+  <script src="src/m/RenderingForm.js"></script>
+  <script src="src/m/VocabularyExercise.js"></script>
+  <script src="src/m/TranslationProblem.js"></script>
+  <script src="src/m/LearningUnit.js"></script>
+
+  <script>
+     window.addEventListener("load", vt.c.app.initialize);
+     window.addEventListener("load", vt.v.vocExercises.manage.setupUserInterface);
+     window.addEventListener("load", vt.c.app.createTestData);
+  </script>
+</head>
+<body>
+<header>
+  <div class="wrapper clearfix">
+    <div class="title">
+      <figure>
+        <img property="thumbnailUrl" title="Icon made by Lorc under CC BY 3.0. Available on http://game-icons.net"
+           src="safari-pinned-tab.svg" />
+      </figure>
+      <h1>Vocabulary Exercises Manager</h1>
+    </div>
+    <nav class="secondary">
+      <ul>
+        <li><button type="button" onclick="vt.v.dictEntries.create.setupUserInterface()" title="Create">C</button></li>
+        <li><button type="button" onclick="vt.v.dictEntries.retrieveAndListAll.setupUserInterface()" title="Retrieve">R</button></li>
+        <li><button type="button" onclick="vt.v.dictEntries.update.setupUserInterface()" title="Update">U</button></li>
+        <li><button type="button" onclick="vt.v.dictEntries.destroy.setupUserInterface()" title="Delete">D</button></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+<main>
+  <div class="wrapper clearfix">
+     <!-- ======================================================= -->
+    <section id="Exercise-M" class="UI-Page">
+       <!-- ======================================================= -->
+      <h1>Manage data:  Vocabulary Exercises.</h1>
+      <menu>
+        <li><button type="button" onclick="vt.v.dictEntries.create.setupUserInterface()">Create Vocabulary Exercise</button></li>
+        <li><button type="button" onclick="vt.v.learningUnits.retrieve.setupUserInterface()">Retrieve and list all Exercises</button></li>
+        <li><button type="button" onclick="vt.v.dictEntries.update.setupUserInterface()">Update Learning Exercises</button></li>
+        <li><button type="button" onclick="vt.v.dictEntries.destroy.setupUserInterface()">Delete all Exercises</button></li>
+      </menu>
+    </section>
+      <!-- ======================================================= -->
+    <section id="Exercise-R" class="UI-Page">
+       <!-- ======================================================= -->
+      <h1>Learning Units show: </h1>
+      <table>
+        <thead><tr>
+          <th>ID</th>
+          <th>Title</th>
+          <th>Description</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+      <li><button type="button" onclick="vt.c.vocExercises.manage.initialize()">Go Back</button></li>
+    </section>
+        <!-- ======================================================= -->
+    <div class="wrapper clearfix">
+      <!-- ======================================================= -->
+      <section id="Exercise-List" class="UI-Page">
+        <h1>Exercises</h1>
+        <form>
+          <div>
+            <label>Learning Unit #<output name="unitName"></output> </label>
+          </div>
+          <div><label>Select ex: <select name="selectExercise"></select> </label></div>
+          <div>
+            <label>renderingForm <output name="renderingForm"></output> </label>
+          </div>
+          <div>
+            <label>problems<output name="problems"></output> </label>
+          </div>
+                <!--<div><button type="submit" onclick="vt.v.learningUnits.list.startExcercise"></button> </div>-->
+        </form>
+      </section>
+    </div>
+  </div>
+</main>
+<footer>
+    <div class="button"><a href="index.html">Back to Main menu</a></div>
+    <!--
+    <div class="foot-content wrapper">
+      Copyright © 2018 Gerd Wagner,
+      <a rel="license" href="http://www.codeproject.com/info/cpol10.aspx">The Code Project Open License (CPOL)</a>.
+    </div>
+    -->
+</footer>
+</body>
+</html>
