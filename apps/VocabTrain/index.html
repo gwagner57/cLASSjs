@@ -51,6 +51,7 @@
   <script>
     window.addEventListener("load", vt.c.app.initialize);
     window.addEventListener("load", vt.v.learningUnits.main.setupUserInterface);
+    window.addEventListener("load", vt.c.app.createTestData);
   </script>
 </head>
 <body>
@@ -148,7 +149,8 @@
       <h1>Examples of Translation problems: </h1>
         <form>
         <div class="field">
-          <label>The task: <output name="name"></output><output name="description"></output></label>
+          <label>The task: <output name="name"></output></label>
+          <label> (description): <output name="description"></output></label>
         </div>
         <div class="button-group">
           <p align="right">
