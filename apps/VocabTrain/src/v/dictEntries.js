@@ -13,8 +13,8 @@ vt.v.dictEntries.manage = {
    * show a specific UI and hide all others
    */
   refreshUI: function () {
-    document.getElementById("Render").style.display = "none";
-    document.getElementById("Manage").style.display = "block";
+  //  document.getElementById("Render").style.display = "none";
+    //document.getElementById("Manage").style.display = "block";
   }
 };
 /**********************************************
@@ -23,26 +23,26 @@ vt.v.dictEntries.manage = {
 vt.v.dictEntries.retrieveAndListAll = {
   setupUserInterface: function () {
     vt.c.storeMan.retrieveAll( vt.DictionaryEntry).then( function (records) {
-        var tableBodyEl = document.querySelector(
-            "section#DictionaryEntry-R > table > tbody");
-        var i=0, row=null, book=null;
-        tableBodyEl.innerHTML = "";  // drop old contents
-        for (i=0; i < records.length; i++) {
-          try {
-            book = new vt.DictionaryEntry( records[i]);
-          } catch (e) {
-            console.log( e.constructor.name + " while deserializing a "+
-                vt.DictionaryEntry.Name +" record: " + e.message);
-            book = null;
-          }
-          if (book) {
-            row = tableBodyEl.insertRow(-1);
-            Object.keys( vt.DictionaryEntry.properties).forEach( function (prop) {
-              row.insertCell(-1).textContent = book.getValueAsString( prop);
-            });
-          }
+      var tableBodyEl = document.querySelector(
+          "section#DictionaryEntry-R > table > tbody");
+      var i=0, row=null, book=null;
+      tableBodyEl.innerHTML = "";  // drop old contents
+      for (i=0; i < records.length; i++) {
+        try {
+          book = new vt.DictionaryEntry( records[i]);
+        } catch (e) {
+          console.log( e.constructor.name + " while deserializing a "+
+              vt.DictionaryEntry.Name +" record: " + e.message);
+          book = null;
         }
-        vt.v.dictEntries.manage.refreshUI("R");
+        if (book) {
+          row = tableBodyEl.insertRow(-1);
+          Object.keys( vt.DictionaryEntry.properties).forEach( function (prop) {
+            row.insertCell(-1).textContent = book.getValueAsString( prop);
+          });
+        }
+      }
+      vt.v.dictEntries.manage.refreshUI("R");
       }
     );
   }

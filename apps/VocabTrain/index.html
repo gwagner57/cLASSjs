@@ -12,8 +12,9 @@
   <link rel="icon" type="image/png" href="favicon-16x16.png" sizes="16x16"/>
   <link rel="mask-icon" href="safari-pinned-tab.svg" color="#5bbad5"/>
 
-  <link rel="stylesheet" href="../../css/normalize.min.css" />
-  <link rel="stylesheet" href="../../css/app-main.css" />
+  <link rel="stylesheet" href="css/normalize.min.css">
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="styles.css" />
 
   <!-- Load polyfills for supporting >=IE9 -->
   <script src="https://cdn.polyfill.io/v2/polyfill.js?features=Array.from,Array.prototype.find,Array.prototype.includes,DOMTokenList,Element.prototype.after,Element.prototype.before,Element.prototype.classList,Element.prototype.cloneNode,Number.isInteger,Object.keys,Object.values,Promise,String.prototype.includes,console.log,&flags=gated" defer async></script>
@@ -32,17 +33,24 @@
   <script src="../../src/oBJECTvIEW.js"></script>
   <script src="../../src/storage/sTORAGEmANAGER.js"></script>
   <script src="../../src/storage/sTORAGEmANAGER_IndexedDB.js"></script>
+
   <script src="src/c/app.js"></script>
   <script src="src/v/dictEntries.js"></script>
+  <script src="src/v/learningUnits.js"></script>
+  <script src="src/v/vocExercises.js"></script>
+  <script src="src/c/vocExercises.js"></script>
   <script src="src/c/dictEntries.js"></script>
+  <script src="src/c/learnUnits.js"></script>
   <script src="src/m/MeaningVariant.js"></script>
   <script src="src/m/DictionaryEntry.js"></script>
   <script src="src/m/RenderingForm.js"></script>
   <script src="src/m/VocabularyExercise.js"></script>
   <script src="src/m/TranslationProblem.js"></script>
   <script src="src/m/LearningUnit.js"></script>
+
   <script>
     window.addEventListener("load", vt.c.app.initialize);
+    window.addEventListener("load", vt.v.learningUnits.main.setupUserInterface);
   </script>
 </head>
 <body>
@@ -56,52 +64,118 @@
       <h1>Vocabulary Training</h1>
     </div>
     <nav class="secondary">
-      <ul>
-        <!--
+      <!--<ul>
         <li><button type="button" onclick="vt.v.dictEntries.create.setupUserInterface()" title="Create">C</button></li>
         <li><button type="button" onclick="vt.v.dictEntries.retrieveAndListAll.setupUserInterface()" title="Retrieve">R</button></li>
         <li><button type="button" onclick="vt.v.dictEntries.update.setupUserInterface()" title="Update">U</button></li>
         <li><button type="button" onclick="vt.v.dictEntries.destroy.setupUserInterface()" title="Delete">D</button></li>
-        -->
-      </ul>
+      </ul>-->
     </nav>
   </div>
 </header>
 <main>
   <div class="wrapper clearfix">
     <!-- ======================================================= -->
-    <section id="Manage" class="UI-Page">
+    <section id="Main" class="UI-Page">
     <!-- ======================================================= -->
-      <h1>Manage data</h1>
+      <h1>Vocabulary trainer</h1>
       <nav>
         <ul>
-          <li><button type="button" onclick="vt.c.app.createTestData()">Generate</button> test data</li>
-          <li><button type="button" onclick="vt.c.storeMan.clearDB()">Clear</button> database</li>
+          <li><button type="button" onclick="vt.c.app.createTestData()">Generate test data</button></li>
+          <li><button type="button" onclick="vt.c.storeMan.clearDB()">Clear database</button></li>
         </ul>
       </nav>
       <h1>Learning units</h1>
-      <nav>
+      <li><button type="button" onclick="vt.c.learnUnits.renderUnit.initialize()">Take a learning unit</button></li>
+        <nav>
         <ul>
-          <li>Take a <button type="button" onclick="vt.c.learnUnits.render()">learning unit</button></li>
+          <div class="button"><a href="learningUnits.html">Manage Learning Units</a></div>
+          <div class="button"><a href="vocabularyExercises.html">Manage Vocabulary Exercises</a></div>
+          <div class="button"><a href="translationProblems.html">Manage Translation Problems</a></div>
         </ul>
       </nav>
       <!-- <div class="button"><a href="index.html">Back to Main menu</a></div> -->
     </section>
     <!-- ======================================================= -->
-    <section id="Render" class="UI-Page">
+    <section id="Unit-Render" class="UI-Page">
       <!-- ======================================================= -->
-      <h1>Translation Problem</h1>
-
+      <h1>Preview Learning Unit</h1>
+        <form>
+          <div>
+            <label>Select learning unit: <select name="selectUnit"></select></label>
+          </div>
+          <div class="field">
+            <label>Number# <output name="id"></output></label>
+          </div>
+          <div class="field">
+            <label>Title: <output name="title"></output></label>
+          </div>
+          <div class="field">
+            <label>Description: <output name="description"></output> </label>
+          </div>
+          <div><button type="reset" onclick="vt.v.learningUnits.renderUnit.unitSelectClickEvent()">Choose this Unit</button></div>
+          <div class="button-group">
+            <p align="right">
+              <button type="submit" name="commit">Hiden</button>
+            </p>
+          </div>
+          <div><button style="display: none" type="submit" onclick="vt.v.renderUnit.submitChoose()">Select Unit block.</button> </div>
+        </form>
     </section>
+      <!-- ======================================================= -->
+    <section id="Exercise" class="UI-Page">
+      <!-- ======================================================= -->
+      <h1>Show Unit Exercises</h1>
+      <form>
+        <div>
+          <label>Select exercise: <select name="selectExercise"></select></label>
+        </div>
+        <div class="field">
+          <label>Type of exercises in unit: <output name="name"></output></label>
+        </div>
+        <div class="field">
+          <label>NmrOfProblems: <output name="NumOfProblems"></output></label>
+        </div>
+        <div>
+          <button type="reset" onclick="vt.v.learningUnits.renderUnit.exerciseSelectClickEvent()">Start this exercise</button>
+        </div>
+      </form>
+      <li><button type="button" onclick="vt.v.learningUnits.renderUnit.setupUserInterface()">Go Back</button></li>
+    </section>
+      <!-- ======================================================= -->
+      <section id="Questions" class="UI-Page">
+       <!-- ======================================================= -->
+      <h1>Examples of Translation problems: </h1>
+        <form>
+        <div class="field">
+          <label>The task: <output name="name"></output><output name="description"></output></label>
+        </div>
+        <div class="button-group">
+          <p align="right">
+            <button type="submit" name="commit">Next problem</button>
+          </p>
+        </div>
+        <div class="field">
+          <label>Source(a word): <output name="source"></output></label>
+          Meanings:
+          <label>- explanation: <output name="explanation"></output></label>
+          <label>- example of sentences: <output name="exampleSentences"></output></label>
+          <label>- other languages translation: <output name="lang"></output></label>
+          <label>  Input your answer: <input type="text" name="answer"/> </label>
+        </div>
+      </form>
+        <li><button type="button" onclick="vt.v.learningUnits.renderUnit.unitSelectClickEvent()">Go Back</button></li>
+      </section>
   </div>
 </main>
 <footer>
-  <!--
-  <div class="foot-content wrapper">
-    Copyright © 2018 Gerd Wagner,
-    <a rel="license" href="http://www.codeproject.com/info/cpol10.aspx">The Code Project Open License (CPOL)</a>.
-  </div>
-  -->
+  <div><p align="center"><button type="reset" onclick="vt.v.learningUnits.renderUnit.backToMain()">Back to Main menu.</button></p></div>
+    <!--
+    <div class="foot-content wrapper">
+      Copyright © 2018 Gerd Wagner,
+      <a rel="license" href="http://www.codeproject.com/info/cpol10.aspx">The Code Project Open License (CPOL)</a>.
+    </div>
+    -->
 </footer>
 </body>
 </html>

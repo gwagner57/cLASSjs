@@ -4,9 +4,9 @@
  */
 // main namespace and subnamespace definitions
 var vt = {
-    m: {},
-    v: { dictEntries:{}},
-    c: { dictEntries:{}}
+  m: { LearningUnit:{}, VocabularyExercise:{}, TranslationProblem:{}},
+  v: { dictEntries:{}, learningUnits:{}, vocExercises:{}, tranProblems:{}},
+  c: { dictEntries:{}, learnUnits:{},vocExercises:{}, tranProblems:{}}
 };
 vt.c.app = {
   name: "VocabularyTraining",
@@ -22,7 +22,7 @@ vt.c.app = {
     vt.c.storeMan = new sTORAGEmANAGER( storageAdapter);
     vt.c.storeMan.validateBeforeSave = true;
     vt.c.storeMan.createLog = true;
-    vt.c.storeMan.createEmptyDb().then( vt.c.dictEntries.manage.initialize);
+    vt.c.storeMan.createEmptyDb().then( vt.c.learnUnits.manage.initialize);
   },
   createTestData: function () {
     vt.c.storeMan.add( vt.DictionaryEntry, [
@@ -55,7 +55,7 @@ vt.c.app = {
         renderingMode: vt.RenderingModeEL.MULTIPLE_PROBLEMS},
     ]);
     vt.c.storeMan.add( vt.LearningUnit, [
-      {title: "Basic Vocabulary Unit 1", description: "This learning unit is about ...",
+      {title: "Basic Vocabulary Unit ONE", description: "This learning unit is about hard-translatable words and their usability",
         exercises: [
           new vt.VocabularyExercise({
             renderingForm: "Enter Text",
@@ -66,6 +66,32 @@ vt.c.app = {
             ],
           })
       ]}
+    ]);
+    vt.c.storeMan.add( vt.LearningUnit, [
+      {title: "Basic Vocabulary Unit TWO", description: "This learning unit is about syntaxis",
+        exercises: [
+          new vt.VocabularyExercise({
+            renderingForm: "Multiple Choice",
+            problems: [
+              new vt.TranslationProblem({source: "abandon1", meaningVariantNo: 1}),
+              new vt.TranslationProblem({source: "abandon1", meaningVariantNo: 2}),
+              new vt.TranslationProblem({source: "ability1", meaningVariantNo: 1})
+            ],
+          })
+        ]}
+    ]);1
+    vt.c.storeMan.add( vt.LearningUnit, [
+      {title: "Basic Vocabulary Unit THREE", description: "This learning unit is about sinonimus words. Connect each acceptable word",
+        exercises: [
+          new vt.VocabularyExercise({
+            renderingForm: "Multiple ChoiceConcentration Game",
+            problems: [
+              new vt.TranslationProblem({source: "abandon2", meaningVariantNo: 1}),
+              new vt.TranslationProblem({source: "abandon2", meaningVariantNo: 2}),
+              new vt.TranslationProblem({source: "ability2", meaningVariantNo: 1})
+            ],
+          })
+        ]}
     ]);
   }
 };
