@@ -1,9 +1,9 @@
-vt.v.learningUnits.renderUnit = { // Choose the Learning Unit
+vt.v.learnUnits.renderUnit = { // Choose the Learning Unit
   setupUserInterface: function () {
       var formEl = document.querySelector("section#Unit-Render > form"),
         unitSelectEl = formEl.elements["selectUnit"];
         unitSelectEl.addEventListener("change",
-          vt.v.learningUnits.renderUnit.handleUnitSelectChangeEvent);
+          vt.v.learnUnits.renderUnit.handleUnitSelectChangeEvent);
     dom.fillSelectWithOptionsFromEntityMap( unitSelectEl, vt.LearningUnit.instances, //vt.LearningUnit.instances[3].exercises[0].renderingForm,
         {displayProp:"title"});
     document.getElementById("Main").style.display = "none";
@@ -68,13 +68,13 @@ vt.v.learningUnits.renderUnit = { // Choose the Learning Unit
     document.getElementById("Questions").style.display = "none";
   }
 };
-vt.v.learningUnits.list = { // the prorotype function
+vt.v.learnUnits.list = { // the prorotype function
   setupUserInterface: function () {
     var formEl = document.querySelector("section#Exercise-List > form"),
         exerciseSelectEl = formEl.elements["selectExercise"],
         unit = null;
     exerciseSelectEl.addEventListener("change",
-        vt.v.learningUnits.list.handleExerciseSelectChangeEvent);
+        vt.v.learnUnits.list.handleExerciseSelectChangeEvent);
     dom.fillSelectWithOptionsFromEntityMap( exerciseSelectEl, vt.VocabularyExercise.instances,
         {displayProp:"problems"});
     document.getElementById("Exercise-List").style.display = "none";
@@ -95,7 +95,7 @@ vt.v.learningUnits.list = { // the prorotype function
   }
 };
 
-vt.v.learningUnits.main = { // main page
+vt.v.learnUnits.main = { // main page
   setupUserInterface: function () {
     document.getElementById("Main").style.display = "block";
     document.getElementById("Unit-Render").style.display = "none";
@@ -104,11 +104,11 @@ vt.v.learningUnits.main = { // main page
   }
 };
 
-vt.v.learningUnits.manage = {
+vt.v.learnUnits.manage = {
   setupUserInterface : function () {
     document.getElementById("Unit-R").style.display = "none";
     document.getElementById("Unit-M").style.display = "block";
-    //vt.v.learningUnits.manage.refreshUI();
+    //vt.v.learnUnits.manage.refreshUI();
   },
   exit: function () {
   },
@@ -118,7 +118,7 @@ vt.v.learningUnits.manage = {
   }
 };
 
-vt.v.learningUnits.retrieve = {
+vt.v.learnUnits.retrieve = {
   setupUserInterface: function () {
     var tableBodyEl = document.querySelector("section#Unit-R>table>tbody");
     var row = null, i = 0, unit = null, listEl = null, keys = Object.keys( vt.LearningUnit.instances);

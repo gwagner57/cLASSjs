@@ -36,9 +36,7 @@
 
   <script src="src/c/app.js"></script>
   <script src="src/v/dictEntries.js"></script>
-  <script src="src/v/learningUnits.js"></script>
-  <script src="src/v/vocExercises.js"></script>
-  <script src="src/c/vocExercises.js"></script>
+  <script src="src/v/learnUnits.js"></script>
   <script src="src/c/dictEntries.js"></script>
   <script src="src/c/learnUnits.js"></script>
   <script src="src/m/MeaningVariant.js"></script>
@@ -50,8 +48,8 @@
 
   <script>
     window.addEventListener("load", vt.c.app.initialize);
-    window.addEventListener("load", vt.v.learningUnits.manage.setupUserInterface);
-    window.addEventListener("load", vt.c.app.createTestData);
+    window.addEventListener("load", vt.v.learnUnits.manage.setupUserInterface);
+    window.addEventListener("load", vt.c.app.loadAppData);
   </script>
 </head>
 <body>
@@ -82,7 +80,7 @@
       <h1>Manage data: Learning Units.</h1>
       <menu>
         <li><button type="button" onclick="vt.v.dictEntries.create.setupUserInterface()">Create Learning Unit</button> </li>
-        <li><button type="button" onclick="vt.v.learningUnits.retrieve.setupUserInterface()">Retrieve and list all Units</button> </li>
+        <li><button type="button" onclick="vt.v.learnUnits.retrieve.setupUserInterface()">Retrieve and list all Units</button> </li>
         <li><button type="button" onclick="vt.v.dictEntries.update.setupUserInterface()">Update Learning Unit</button> </li>
         <li><button type="button" onclick="vt.v.dictEntries.destroy.setupUserInterface()">Delete all Units</button> </li>
       </menu>

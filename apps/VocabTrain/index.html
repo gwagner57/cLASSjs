@@ -36,9 +36,7 @@
 
   <script src="src/c/app.js"></script>
   <script src="src/v/dictEntries.js"></script>
-  <script src="src/v/learningUnits.js"></script>
-  <script src="src/v/vocExercises.js"></script>
-  <script src="src/c/vocExercises.js"></script>
+  <script src="src/v/learnUnits.js"></script>
   <script src="src/c/dictEntries.js"></script>
   <script src="src/c/learnUnits.js"></script>
   <script src="src/m/MeaningVariant.js"></script>
@@ -48,10 +46,12 @@
   <script src="src/m/TranslationProblem.js"></script>
   <script src="src/m/LearningUnit.js"></script>
 
+  <script src="data/dictEntries.js"></script>
+  <script src="data/rendForms.js"></script>
+  <script src="data/learnUnits.js"></script>
+
   <script>
     window.addEventListener("load", vt.c.app.initialize);
-    window.addEventListener("load", vt.v.learningUnits.main.setupUserInterface);
-    window.addEventListener("load", vt.c.app.createTestData);
   </script>
 </head>
 <body>
@@ -82,7 +82,7 @@
       <h1>Vocabulary trainer</h1>
       <nav>
         <ul>
-          <li><button type="button" onclick="vt.c.app.createTestData()">Generate test data</button></li>
+          <li><button type="button" onclick="vt.c.app.loadAppData()">Generate test data</button></li>
           <li><button type="button" onclick="vt.c.storeMan.clearDB()">Clear database</button></li>
         </ul>
       </nav>
@@ -91,8 +91,6 @@
         <nav>
         <ul>
           <div class="button"><a href="learningUnits.html">Manage Learning Units</a></div>
-          <div class="button"><a href="vocabularyExercises.html">Manage Vocabulary Exercises</a></div>
-          <div class="button"><a href="translationProblems.html">Manage Translation Problems</a></div>
         </ul>
       </nav>
       <!-- <div class="button"><a href="index.html">Back to Main menu</a></div> -->
@@ -114,7 +112,7 @@
           <div class="field">
             <label>Description: <output name="description"></output> </label>
           </div>
-          <div><button type="reset" onclick="vt.v.learningUnits.renderUnit.unitSelectClickEvent()">Choose this Unit</button></div>
+          <div><button type="reset" onclick="vt.v.learnUnits.renderUnit.unitSelectClickEvent()">Choose this Unit</button></div>
           <div class="button-group">
             <p align="right">
               <button type="submit" name="commit">Hiden</button>
@@ -138,10 +136,10 @@
           <label>NmrOfProblems: <output name="NumOfProblems"></output></label>
         </div>
         <div>
-          <button type="reset" onclick="vt.v.learningUnits.renderUnit.exerciseSelectClickEvent()">Start this exercise</button>
+          <button type="reset" onclick="vt.v.learnUnits.renderUnit.exerciseSelectClickEvent()">Start this exercise</button>
         </div>
       </form>
-      <li><button type="button" onclick="vt.v.learningUnits.renderUnit.setupUserInterface()">Go Back</button></li>
+      <li><button type="button" onclick="vt.v.learnUnits.renderUnit.setupUserInterface()">Go Back</button></li>
     </section>
       <!-- ======================================================= -->
       <section id="Questions" class="UI-Page">
@@ -166,12 +164,12 @@
           <label>  Input your answer: <input type="text" name="answer"/> </label>
         </div>
       </form>
-        <li><button type="button" onclick="vt.v.learningUnits.renderUnit.unitSelectClickEvent()">Go Back</button></li>
+        <li><button type="button" onclick="vt.v.learnUnits.renderUnit.unitSelectClickEvent()">Go Back</button></li>
       </section>
   </div>
 </main>
 <footer>
-  <div><p align="center"><button type="reset" onclick="vt.v.learningUnits.renderUnit.backToMain()">Back to Main menu.</button></p></div>
+  <div><p align="center"><button type="reset" onclick="vt.v.learnUnits.renderUnit.backToMain()">Back to Main menu.</button></p></div>
     <!--
     <div class="foot-content wrapper">
       Copyright © 2018 Gerd Wagner,

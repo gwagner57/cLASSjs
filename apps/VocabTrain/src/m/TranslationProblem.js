@@ -7,7 +7,7 @@ vt.TranslationProblem = new cLASS({
   isComplexDatatype: true,
   properties: {
     "source": {range:"NonEmptyString", label:"Source text"},
-    "meaningVariantNo": {range: "PositiveInteger", label: "Meaning variant number"}
+    "meaningVariantNo": {range: "PositiveInteger", label: "Meaning variant number", optional: true}
   },
   methods: {
   }

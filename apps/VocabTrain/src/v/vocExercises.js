@@ -3,7 +3,7 @@ vt.v.vocExercises.manage = {
     document.getElementById("Exercise-R").style.display = "none";
     document.getElementById("Exercise-List").style.display = "none";
     document.getElementById("Exercise-M").style.display = "block";
-    //vt.v.learningUnits.manage.refreshUI();
+    //vt.v.learnUnits.manage.refreshUI();
   },
   exit: function () {
   },

@@ -14,7 +14,7 @@ qz.c.app = {
   initialize: function() {
     qz.c.quizzes.manage.initialize();
   },
-  createTestData: function () {
+  loadAppData: function () {
     var t1=null, t2=null, t3=null, t4=null, t5=null, t6=null, t7=null, t8=null, t9=null, t10=null,
         q1=null, q2=null,
         newObj=null;

@@ -16,5 +16,8 @@ vt.RenderingForm = new cLASS({
     "description": {range:"NonEmptyString", min: 10, max: 1000,
       label:"Description"},
     "renderingMode": {range:"RenderingModeEL", label:"Rendering mode"}
+  },
+  methods: {
+
   }
 });

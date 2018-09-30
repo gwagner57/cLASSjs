@@ -22,7 +22,7 @@ pl.c.app = {
     pl.c.storeMan = new sTORAGEmANAGER( storageAdapter);
     pl.c.storeMan.createEmptyDb().then( pl.c.books.manage.initialize);
   },
-  createTestData: function () {
+  loadAppData: function () {
     pl.c.storeMan.add( Book, [
       {id: "006251587X", title: "Weaving the Web", year: 2000, edition: 2},
       {id: "0465026567", title: "Gödel, Escher, Bach", year: 1999},
