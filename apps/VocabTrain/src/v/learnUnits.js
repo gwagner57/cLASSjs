@@ -50,6 +50,7 @@ vt.v.learnUnits.renderUnit = { // Choose the Learning Unit
       ke = keyEx;
       exercise = vt.data.learnUnits[keyUn-1].exercises[0]; // select needed exercise with keyEx
       problemsEl.innerHTML = "";
+      problemsEl.appendChild( dom.createElement( "p", {content: "<b>This exercise consists " + exercise.problems.length + " problems."}));// why doesnt work
       for (var i = 0; i < exercise.problems.length; ++i){
         var problem = exercise.problems[i];
         var probEl = dom.createElement("div", {id: problem.id, classValues: "problem"});
