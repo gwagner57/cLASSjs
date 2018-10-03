@@ -48,7 +48,7 @@ vt.v.learnUnits.renderUnit = { // Choose the Learning Unit
         unit = null, exercise = null, divEl = null; // exercise
     if (keyEx && keyEx !== ke) {
       ke = keyEx;
-      exercise = vt.data.learnUnits[keyUn-1].exercises[0]; // select needed exercise with keyEx
+      exercise = vt.data.learnUnits[keyUn-1].exercises[0]; // select needed exercise with 0 --> keyEx
       problemsEl.innerHTML = "";
       problemsEl.appendChild( dom.createElement( "p", {content: "<b>This exercise consists " + exercise.problems.length + " problems."}));// why doesnt work
       for (var i = 0; i < exercise.problems.length; ++i){
@@ -63,6 +63,7 @@ vt.v.learnUnits.renderUnit = { // Choose the Learning Unit
         probEl.appendChild( document.createTextNode("Translation: "));
         probEl.appendChild( dom.createLabeledInputField(""));
         problemsEl.appendChild(probEl);
+        problemsEl.appendChild( document.createTextNode("_______________________________________________________________"))
       }
       exerciseEl.appendChild(problemsEl);
       document.querySelector("section#Unit-Render > form button[type='submit']").style.display = "inline";
@@ -73,7 +74,15 @@ vt.v.learnUnits.renderUnit = { // Choose the Learning Unit
   },
 
   handleSubmitButtonClickEvent: function () {// create constraint violation in case the answer wrong. archive data if everything is good. counting completed exercises.
-    var formEl = document.querySelector("section#Render-Unit > form"), slots = {};
+    var formUnEl = document.querySelector("section#Unit-Render > form"),
+        unitSelectEl = formUnEl.elements["selectUnit"],
+        exSelectEl = formUnEl.elements["selectExercise"],
+        exerciseEl = document.getElementById("exercise1"),
+        problemsEl = document.getElementById("problem1"),
+        keyUn = formUnEl.selectUnit.value,// slots = {},
+        keyEx = formUnEl.selectExercise.value, ke,
+        unit = null, exercise = null, divEl = null;
+    formUnEl.appendChild(dom.createElement("p", "fllflflflfl"));
   },
 
   backToMain: function () {
