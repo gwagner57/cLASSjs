@@ -22,7 +22,7 @@ vt.v.learnUnits.renderUnit = { // Choose the Learning Unit
         problemsEl = document.getElementById("problem1"),
         keyUn = formUnEl.selectUnit.value, keyEx, unit = null,
         exercise = null, divEl = null, ku;
-    if (keyUn && keyUn !== ku) {
+      if (keyUn && keyUn !== ku) {
       problemsEl.innerHTML = "";
       dom.fillSelectWithOptionsFromEntityMap(exSelectEl, vt.LearningUnit.instances, "title");
       unit = vt.LearningUnit.instances[keyUn];
@@ -33,7 +33,8 @@ vt.v.learnUnits.renderUnit = { // Choose the Learning Unit
       formUnEl.reset();
       unitSelectEl.selectedIndex = 0;
       problemsEl.innerHTML = "";
-    }
+      document.querySelector("section#Unit-Render > form button[type='submit']").style.display = "none";
+      }
   },
 
   handleExerciseSelectChangeEvent: function () {
@@ -47,12 +48,12 @@ vt.v.learnUnits.renderUnit = { // Choose the Learning Unit
         unit = null, exercise = null, divEl = null; // exercise
     if (keyEx && keyEx !== ke) {
       ke = keyEx;
-      exercise = vt.data.learnUnits[keyUn-1].exercises[0];
+      exercise = vt.data.learnUnits[keyUn-1].exercises[0]; // select needed exercise with keyEx
       problemsEl.innerHTML = "";
       for (var i = 0; i < exercise.problems.length; ++i){
         var problem = exercise.problems[i];
         var probEl = dom.createElement("div", {id: problem.id, classValues: "problem"});
-        probEl.appendChild( dom.createElement( "p", {content: "<b>Problem #"+ (i+1) +"</b>: "+ problem.source}));
+        probEl.appendChild( dom.createElement( "p", {content: "<b>Problem #"+ (i+1) +"</b>: " + "'" + problem.source + "'" }));
              //if (problem) {
               //    problem.meanings.forEach( function (mv, seqNo) {
               //       probEl.appendChild( dom.createElement( "p", {content: "<b>Explanation# </b>: " + mv}));
@@ -66,12 +67,12 @@ vt.v.learnUnits.renderUnit = { // Choose the Learning Unit
       document.querySelector("section#Unit-Render > form button[type='submit']").style.display = "inline";
       } else {
       problemsEl.innerHTML = "";
-      document.querySelector("section#Quiz-Take > form button[type='submit']").style.display = "none";
+      document.querySelector("section#Unit-Render > form button[type='submit']").style.display = "none";
     }
   },
 
   handleSubmitButtonClickEvent: function () {// create constraint violation in case the answer wrong. archive data if everything is good. counting completed exercises.
-    var formEl = document.querySelector("section#DictionaryEntry-C > form"), slots = {};
+    var formEl = document.querySelector("section#Render-Unit > form"), slots = {};
   },
 
   backToMain: function () {
@@ -109,7 +110,6 @@ vt.v.learnUnits.manage = {
   setupUserInterface : function () {
     document.getElementById("Unit-R").style.display = "none";
     document.getElementById("Unit-M").style.display = "block";
-    //vt.v.learnUnits.manage.refreshUI();
   },
   exit: function () {
   },
