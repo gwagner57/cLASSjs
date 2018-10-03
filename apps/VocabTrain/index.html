@@ -112,13 +112,13 @@
           <div class="field">
             <label>Description: <output name="description"></output> </label>
           </div>
-          <div><button type="reset" onclick="vt.v.learnUnits.renderUnit.unitSelectClickEvent()">Choose this Unit</button></div>
-          <div class="button-group">
-            <p align="right">
-              <button type="submit" name="commit">Hiden</button>
-            </p>
-          </div>
-          <div><button style="display: none" type="submit" onclick="vt.v.renderUnit.submitChoose()">Select Unit block.</button> </div>
+          <div id="problem1"></div>
+            <div/>
+            <div>
+                <label>Select exercise: <select name="selectExercise"></select></label>
+            </div>
+            <div id="exercise1"></div>
+          <div><button id="submit1" style="display: none" type="submit" onclick="vt.learnUnits.renderUnit.handleSubmitButtonClickEvent()" name="commit">Finish exercise</button> </div>
         </form>
     </section>
       <!-- ======================================================= -->
@@ -135,9 +135,11 @@
         <div class="field">
           <label>NmrOfProblems: <output name="NumOfProblems"></output></label>
         </div>
+        <div id="problems"></div>
         <div>
           <button type="reset" onclick="vt.v.learnUnits.renderUnit.exerciseSelectClickEvent()">Start this exercise</button>
         </div>
+          <div><button type="reset" onclick="vt.v.learnUnits.renderUnit.unitSelectClickEvent()">Choose this Unit</button></div>
       </form>
       <li><button type="button" onclick="vt.v.learnUnits.renderUnit.setupUserInterface()">Go Back</button></li>
     </section>

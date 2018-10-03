@@ -1,10 +1,12 @@
 vt.v.learnUnits.renderUnit = { // Choose the Learning Unit
   setupUserInterface: function () {
-      var formEl = document.querySelector("section#Unit-Render > form"),
-        unitSelectEl = formEl.elements["selectUnit"];
-        unitSelectEl.addEventListener("change",
+    var formUnEl = document.querySelector("section#Unit-Render > form"),
+        unitSelectEl = formUnEl.elements["selectUnit"],
+        exSelectEl = formUnEl.elements["selectExercise"];
+    unitSelectEl.addEventListener("change",
           vt.v.learnUnits.renderUnit.handleUnitSelectChangeEvent);
-    dom.fillSelectWithOptionsFromEntityMap( unitSelectEl, vt.LearningUnit.instances, //vt.LearningUnit.instances[3].exercises[0].renderingForm,
+    exSelectEl.addEventListener("change", vt.v.learnUnits.renderUnit.handleExerciseSelectChangeEvent);
+    dom.fillSelectWithOptionsFromEntityMap( unitSelectEl, vt.LearningUnit.instances,
         {displayProp:"title"});
     document.getElementById("Main").style.display = "none";
     document.getElementById("Unit-Render").style.display = "block";
@@ -12,53 +14,64 @@ vt.v.learnUnits.renderUnit = { // Choose the Learning Unit
     document.getElementById("Exercise").style.display = "none";
   },
 
-  unitSelectClickEvent: function () { // Unit selected case
-    document.getElementById("Main").style.display = "none";
-    document.getElementById("Unit-Render").style.display = "none";
-    document.getElementById("Questions").style.display = "none";
-    document.getElementById("Exercise").style.display = "block";
-    var formEl = document.querySelector("section#Exercise > form"),
-        exerciseSelectEl = formEl.elements["selectExercise"],
-        keyEx = formEl.selectExercise.value,
-        exercise = null;
-    dom.fillSelectWithOptionsFromEntityMap( exerciseSelectEl, vt.LearningUnit.instances[keyUn].exercises.instances,
-        {displayProp: "renderingForm"});
-    if (keyEx !== '') {
-      exercise = vt.VocabularyExercise.instances[keyEx];
-      formEl.renderingForm.value = exercise.renderingForm;
-      formEl.NumOfProblems = exercise.getNmrOfProblems();
-    } else {
-      formEl.reset();
-    }
-  },
-
-  exerciseSelectClickEvent: function () {// Exercise selected case
-    var formEl = document.querySelector("section#Questions > form"),
-        exerciseSelectEl = formEl.elements["selectQuestion"],
-        question = null;
-    formEl.name.value = " Enter text.";
-    formEl.description.value = "Enter a correct translation of a word or phrase.";
-    //dom.fillSelectWithOptionsFromEntityMap(exerciseSelectEl, ,
-    // FILL  //  {displayProp: "renderingForm"});
-    //dom.createLabeledInputField(); //IF RenderingModelEl = single make single choise item else multiple
-    document.getElementById("Main").style.display = "none";
-    document.getElementById("Unit-Render").style.display = "none";
-    document.getElementById("Exercise").style.display = "none";
-    document.getElementById("Questions").style.display = "block";
-  },
-
   handleUnitSelectChangeEvent: function () {  //unit changed
-    var formEl = document.querySelector("section#Unit-Render > form"),
-        keyUn = formEl.selectUnit.value,
-        unit = null;
-    if (keyUn !== '') {
+    var formUnEl = document.querySelector("section#Unit-Render > form"),
+        unitSelectEl = formUnEl.elements["selectUnit"],
+        exSelectEl = formUnEl.elements["selectExercise"],
+        exerciseEl = document.getElementById("exercise1"),
+        problemsEl = document.getElementById("problem1"),
+        keyUn = formUnEl.selectUnit.value, keyEx, unit = null,
+        exercise = null, divEl = null, ku;
+    if (keyUn && keyUn !== ku) {
+      problemsEl.innerHTML = "";
+      dom.fillSelectWithOptionsFromEntityMap(exSelectEl, vt.LearningUnit.instances, "title");
       unit = vt.LearningUnit.instances[keyUn];
-      formEl.id.value = unit.id;
-      formEl.title.value = unit.title;
-      formEl.description.value = unit.description;
+      formUnEl.id.value = unit.id;
+      formUnEl.title.value = unit.title;
+      formUnEl.description.value = unit.description;
     } else {
-      formEl.reset();
+      formUnEl.reset();
+      unitSelectEl.selectedIndex = 0;
+      problemsEl.innerHTML = "";
     }
+  },
+
+  handleExerciseSelectChangeEvent: function () {
+    var formUnEl = document.querySelector("section#Unit-Render > form"),
+        unitSelectEl = formUnEl.elements["selectUnit"],
+        exSelectEl = formUnEl.elements["selectExercise"],
+        exerciseEl = document.getElementById("exercise1"),
+        problemsEl = document.getElementById("problem1"),
+        keyUn = formUnEl.selectUnit.value,
+        keyEx = formUnEl.selectExercise.value, ke,
+        unit = null, exercise = null, divEl = null; // exercise
+    if (keyEx && keyEx !== ke) {
+      ke = keyEx;
+      exercise = vt.data.learnUnits[keyUn-1].exercises[0];
+      problemsEl.innerHTML = "";
+      for (var i = 0; i < exercise.problems.length; ++i){
+        var problem = exercise.problems[i];
+        var probEl = dom.createElement("div", {id: problem.id, classValues: "problem"});
+        probEl.appendChild( dom.createElement( "p", {content: "<b>Problem #"+ (i+1) +"</b>: "+ problem.source}));
+             //if (problem) {
+              //    problem.meanings.forEach( function (mv, seqNo) {
+              //       probEl.appendChild( dom.createElement( "p", {content: "<b>Explanation# </b>: " + mv}));
+                //    });
+                //  }
+        probEl.appendChild( document.createTextNode("Translation: "));
+        probEl.appendChild( dom.createLabeledInputField(""));
+        problemsEl.appendChild(probEl);
+      }
+      exerciseEl.appendChild(problemsEl);
+      document.querySelector("section#Unit-Render > form button[type='submit']").style.display = "inline";
+      } else {
+      problemsEl.innerHTML = "";
+      document.querySelector("section#Quiz-Take > form button[type='submit']").style.display = "none";
+    }
+  },
+
+  handleSubmitButtonClickEvent: function () {// create constraint violation in case the answer wrong. archive data if everything is good. counting completed exercises.
+    var formEl = document.querySelector("section#DictionaryEntry-C > form"), slots = {};
   },
 
   backToMain: function () {
@@ -68,6 +81,7 @@ vt.v.learnUnits.renderUnit = { // Choose the Learning Unit
     document.getElementById("Questions").style.display = "none";
   }
 };
+
 vt.v.learnUnits.list = { // the prorotype function
   setupUserInterface: function () {
     var formEl = document.querySelector("section#Exercise-List > form"),
@@ -80,19 +94,6 @@ vt.v.learnUnits.list = { // the prorotype function
     document.getElementById("Exercise-List").style.display = "none";
     document.getElementById("Exercise-M").style.display = "block";
   },
-
-  handleExerciseSelectChangeEvent: function () {
-    var formEl = document.querySelector("section#Exercise-List > form"),
-        key = formEl.selectExercise.value,
-        unit = null;
-    if (key !== '') {
-      unit = vt.VocabularyExercise.instances[key];
-      formEl.renderingForm.value = unit.renderingForm.value;
-      formEl.problems.value = unit.problems.value;
-    } else {
-      formEl.reset();
-    }
-  }
 };
 
 vt.v.learnUnits.main = { // main page
