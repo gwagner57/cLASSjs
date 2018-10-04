@@ -14,7 +14,7 @@
 
   <link rel="stylesheet" href="css/normalize.min.css">
   <link rel="stylesheet" href="css/main.css">
-  <link rel="stylesheet" href="styles.css" />
+ <!--  <link rel="stylesheet" href="styles.css" />-->
 
   <!-- Load polyfills for supporting >=IE9 -->
   <script src="https://cdn.polyfill.io/v2/polyfill.js?features=Array.from,Array.prototype.find,Array.prototype.includes,DOMTokenList,Element.prototype.after,Element.prototype.before,Element.prototype.classList,Element.prototype.cloneNode,Number.isInteger,Object.keys,Object.values,Promise,String.prototype.includes,console.log,&flags=gated" defer async></script>
@@ -113,12 +113,11 @@
             <label>Description: <output name="description"></output> </label>
           </div>
           <div id="problem1"></div>
-            <div/>
-            <div>
-                <label>Select exercise: <select name="selectExercise"></select></label>
-            </div>
-            <div id="exercise1"></div>
-          <div><button id="submit1" style="display: none" type="submit" onclick="vt.v.learnUnits.renderUnit.handleSubmitButtonClickEvent()" name="commit">Finish exercise</button> </div>
+          <div>
+            <label>Select exercise: <select name="selectExercise"></select></label>
+          </div>
+          <div id="exercise1"></div>
+          <div><button id="submit1" type="reset" onclick="vt.v.learnUnits.renderUnit.handleSubmitButtonClickEvent()">Finish exercise</button></div>
         </form>
     </section>
       <!-- ======================================================= -->

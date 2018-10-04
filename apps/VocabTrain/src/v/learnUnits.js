@@ -9,21 +9,22 @@ vt.v.learnUnits.renderUnit = { // Choose the Learning Unit
     dom.fillSelectWithOptionsFromEntityMap( unitSelectEl, vt.LearningUnit.instances,
         {displayProp:"title"});
     document.getElementById("Main").style.display = "none";
-    document.getElementById("Unit-Render").style.display = "block";
+    document.getElementById("Unit-Render").style.display = "block";// change to main if ned
     document.getElementById("Questions").style.display = "none";
     document.getElementById("Exercise").style.display = "none";
+    document.querySelector("section#Unit-Render > form button[id='submit1']").style.display = "none";
   },
 
   handleUnitSelectChangeEvent: function () {  //unit changed
     var formUnEl = document.querySelector("section#Unit-Render > form"),
         unitSelectEl = formUnEl.elements["selectUnit"],
         exSelectEl = formUnEl.elements["selectExercise"],
-        exerciseEl = document.getElementById("exercise1"),
         problemsEl = document.getElementById("problem1"),
-        keyUn = formUnEl.selectUnit.value, keyEx, unit = null,
-        exercise = null, divEl = null, ku;
-      if (keyUn && keyUn !== ku) {
-      problemsEl.innerHTML = "";
+        keyUn = formUnEl.selectUnit.value, unit = null, keyEx, ku;
+    if (keyUn && keyUn !== ku) {
+      if (problemsEl.innerHTML !== "") {
+        problemsEl.innerHTML = "";
+      }
       dom.fillSelectWithOptionsFromEntityMap(exSelectEl, vt.LearningUnit.instances, "title");
       unit = vt.LearningUnit.instances[keyUn];
       formUnEl.id.value = unit.id;
@@ -33,8 +34,8 @@ vt.v.learnUnits.renderUnit = { // Choose the Learning Unit
       formUnEl.reset();
       unitSelectEl.selectedIndex = 0;
       problemsEl.innerHTML = "";
-      document.querySelector("section#Unit-Render > form button[type='submit']").style.display = "none";
-      }
+      document.querySelector("section#Unit-Render > form button[id='submit1']").style.display = "none";
+    }
   },
 
   handleExerciseSelectChangeEvent: function () {
@@ -45,12 +46,14 @@ vt.v.learnUnits.renderUnit = { // Choose the Learning Unit
         problemsEl = document.getElementById("problem1"),
         keyUn = formUnEl.selectUnit.value,
         keyEx = formUnEl.selectExercise.value, ke,
-        unit = null, exercise = null, divEl = null; // exercise
+        unit = null, exercise = null; // exercise
     if (keyEx && keyEx !== ke) {
       ke = keyEx;
       exercise = vt.data.learnUnits[keyUn-1].exercises[0]; // select needed exercise with 0 --> keyEx
-      problemsEl.innerHTML = "";
-      problemsEl.appendChild( dom.createElement( "p", {content: "<b>This exercise consists " + exercise.problems.length + " problems."}));// why doesnt work
+      if (problemsEl.innerHTML !== "") {
+        problemsEl.innerHTML = "";
+      }
+      problemsEl.appendChild( dom.createElement( "p", {content: "<b>This exercise consists " + exercise.problems.length + " problems."}));
       for (var i = 0; i < exercise.problems.length; ++i){
         var problem = exercise.problems[i];
         var probEl = dom.createElement("div", {id: problem.id, classValues: "problem"});
@@ -66,23 +69,40 @@ vt.v.learnUnits.renderUnit = { // Choose the Learning Unit
         problemsEl.appendChild( document.createTextNode("_______________________________________________________________"))
       }
       exerciseEl.appendChild(problemsEl);
-      document.querySelector("section#Unit-Render > form button[type='submit']").style.display = "inline";
-      } else {
+      document.querySelector("section#Unit-Render > form button[id='submit1']").style.display = "inline";
+    } else if (problemsEl.innerHTML !== "") {
       problemsEl.innerHTML = "";
-      document.querySelector("section#Unit-Render > form button[type='submit']").style.display = "none";
+      document.querySelector("section#Unit-Render > form button[id='submit1']").style.display = "none";
     }
   },
 
   handleSubmitButtonClickEvent: function () {// create constraint violation in case the answer wrong. archive data if everything is good. counting completed exercises.
     var formUnEl = document.querySelector("section#Unit-Render > form"),
+        exerciseEl = document.getElementById("exercise1"),// for results  and next task view
+        problemsEl = document.getElementById("problem1"),
         unitSelectEl = formUnEl.elements["selectUnit"],
         exSelectEl = formUnEl.elements["selectExercise"],
-        exerciseEl = document.getElementById("exercise1"),
-        problemsEl = document.getElementById("problem1"),
-        keyUn = formUnEl.selectUnit.value,// slots = {},
+        keyUn = formUnEl.selectUnit.value, slots = {},
         keyEx = formUnEl.selectExercise.value, ke,
-        unit = null, exercise = null, divEl = null;
-    formUnEl.appendChild(dom.createElement("p", "fllflflflfl"));
+        unit = null, exercise = null, divEl = null,
+        isFinished = null; //go through
+    exerciseEl.innerHTML = "";
+    problemsEl.innerHTML = "";
+
+    if (isFinished === null) { //checkk validation
+    }
+    if (isFinished === null) { // validation completed
+      exercise = vt.data.learnUnits[keyUn-1].exercises[keyEx-1];// shhh
+      exerciseEl.appendChild(dom.createElement( "p", {content: "<b>You have completed exercise #" + keyEx +
+          + ". Continue studying with next Exercise.</b>"}));
+     // exercise = vt.data.learnUnits[keyUn-1].exercises.exercises[keyEx-1];// next exercise
+      exerciseEl.appendChild(document.createTextNode("Your next task is " + exercise.renderingForm));
+
+
+      formUnEl.appendChild(exerciseEl);
+      //exSelectEl.selectedIndex++;
+      document.querySelector("section#Unit-Render > form button[id='submit1']").style.display = "none";
+    }
   },
 
   backToMain: function () {
