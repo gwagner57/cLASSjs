@@ -2,12 +2,16 @@ vt.v.learnUnits.renderUnit = { // Choose the Learning Unit
   setupUserInterface: function () {
     var formUnEl = document.querySelector("section#Unit-Render > form"),
         unitSelectEl = formUnEl.elements["selectUnit"],
-        exSelectEl = formUnEl.elements["selectExercise"];
+        exSelectEl = formUnEl.elements["selectExercise"],
+        exerciseEl = document.getElementById("exercise1");
     unitSelectEl.addEventListener("change",
           vt.v.learnUnits.renderUnit.handleUnitSelectChangeEvent);
     exSelectEl.addEventListener("change", vt.v.learnUnits.renderUnit.handleExerciseSelectChangeEvent);
     dom.fillSelectWithOptionsFromEntityMap( unitSelectEl, vt.LearningUnit.instances,
         {displayProp:"title"});
+    if (exerciseEl.innerHTML !== "") {
+      exerciseEl.innerHTML = "";
+    }
     document.getElementById("Main").style.display = "none";
     document.getElementById("Unit-Render").style.display = "block";// change to main if ned
     document.getElementById("Questions").style.display = "none";
@@ -20,10 +24,14 @@ vt.v.learnUnits.renderUnit = { // Choose the Learning Unit
         unitSelectEl = formUnEl.elements["selectUnit"],
         exSelectEl = formUnEl.elements["selectExercise"],
         problemsEl = document.getElementById("problem1"),
+        exerciseEl = document.getElementById("exercise1"),
         keyUn = formUnEl.selectUnit.value, unit = null, keyEx, ku;
     if (keyUn && keyUn !== ku) {
       if (problemsEl.innerHTML !== "") {
         problemsEl.innerHTML = "";
+      }
+      if (exerciseEl.innerHTML !== "") {
+        exerciseEl.innerHTML = "";
       }
       dom.fillSelectWithOptionsFromEntityMap(exSelectEl, vt.LearningUnit.instances, "title");
       unit = vt.LearningUnit.instances[keyUn];
@@ -34,6 +42,7 @@ vt.v.learnUnits.renderUnit = { // Choose the Learning Unit
       formUnEl.reset();
       unitSelectEl.selectedIndex = 0;
       problemsEl.innerHTML = "";
+      exerciseEl.innerHTML = "";
       document.querySelector("section#Unit-Render > form button[id='submit1']").style.display = "none";
     }
   },
@@ -52,6 +61,9 @@ vt.v.learnUnits.renderUnit = { // Choose the Learning Unit
       exercise = vt.data.learnUnits[keyUn-1].exercises[0]; // select needed exercise with 0 --> keyEx
       if (problemsEl.innerHTML !== "") {
         problemsEl.innerHTML = "";
+      }
+      if (exerciseEl.innerHTML !== "") {
+        exerciseEl.innerHTML = "";
       }
       problemsEl.appendChild( dom.createElement( "p", {content: "<b>This exercise consists " + exercise.problems.length + " problems."}));
       for (var i = 0; i < exercise.problems.length; ++i){

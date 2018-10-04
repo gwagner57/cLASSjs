@@ -405,4 +405,294 @@ vt.data.dictEntries = [
             {explanation: "based on, concerned with, or verifiable by observation or experience rather than theory or pure logic.",
                 exampleSentences: ["they provided considerable empirical evidence to support their argument"], de: "empirisch"}
         ]},
+    {source: "fun", wordCategory: vt.WordCategoryEL.NOUN ,
+        meanings: [
+            {explanation: "enjoyment, amusement, or lighthearted pleasure.",
+                exampleSentences: ["the children were having fun in the play area"], de:"Spaß"}
+        ]},
+    {source: "furniture", wordCategory: vt.WordCategoryEL.NOUN ,
+        meanings: [
+            {explanation: "large movable equipment, such as tables and chairs, used to make a house, office, or other space suitable for living or working.",
+                exampleSentences: ["If you are in a room with lots of furniture , tables, chairs, bar stools, etc., use them to your advantage."], de: "Möbel"}
+        ]},
+    {source: "further", wordCategory: vt.WordCategoryEL.ADJECTIVE ,
+        meanings: [
+            {explanation: "more distant in space than something else of the same kind.",
+                exampleSentences: ["two men were standing at the further end of the clearing"], de: "weiteren"}
+        ]},
+    {source: "fire", wordCategory: vt.WordCategoryEL.NOUN ,
+        meanings: [
+            {explanation: "combustion or burning, in which substances combine chemically with oxygen from the air and typically give out bright light.",
+                exampleSentences: ["his house was destroyed by fire"], de: "feuer"}
+        ]},
+    {source: "fall", wordCategory: vt.WordCategoryEL.NOUN ,
+        meanings: [
+            {explanation: "an act of falling or collapsing; a sudden uncontrollable descent",
+                exampleSentences: ["his mother had a fall, hurting her leg as she alighted from a train"], de: "fallen"}
+        ]},
+    {source: "focus", wordCategory: vt.WordCategoryEL.NOUN ,
+        meanings: [
+            {explanation: "the center of interest or activity.",
+                exampleSentences: ["this generation has made the environment a focus of attention"], de: "fokus"}
+        ]},
+    {source: "father", wordCategory: vt.WordCategoryEL.NOUN ,
+        meanings: [
+            {explanation: "a man in relation to his natural child or children.",
+                exampleSentences: ["The early comics, and this movie, are loaded with family drama - missing fathers, vulnerable fathers , fathers-gone-bad."], de: "vater"}
+        ]},
+    {source: "folder", wordCategory: vt.WordCategoryEL.NOUN ,
+        meanings: [
+            {explanation: "a folding cover or holder, typically made of stiff paper or cardboard, for storing loose papers.",
+                exampleSentences: ["The bell rang and I stuffed my loose paper into a folder as I threw the pen in a bag and grabbed all my stuff."], de: "mappe"}
+        ]},
+    {source: "future", wordCategory: vt.WordCategoryEL.NOUN ,
+        meanings: [
+            {explanation: "at a later time; going or likely to happen or exist.",
+                exampleSentences: ["the needs of future generations"], de: "zukunft"}
+        ]},
+    {source: "enter", wordCategory: vt.WordCategoryEL.VERB ,
+        meanings: [
+            {explanation: "come or go into (a place).",
+                exampleSentences: ["she entered the kitchen"], de: "eingeben"}
+        ]},
+    {source: "good", wordCategory: vt.WordCategoryEL.ADJECTIVE ,
+        meanings: [
+            {explanation: "to be desired or approved of.",
+                exampleSentences: ["we live at peace with each other, which is good"], de: "gut"}
+        ]},
+    {source: "get", wordCategory: vt.WordCategoryEL.VERB ,
+        meanings: [
+            {explanation: "come to have or hold (something); receive.",
+                exampleSentences: ["I got the impression that she wasn't happy"], de: "bekommen"}
+        ]},
+    {source: "great", wordCategory: vt.WordCategoryEL.ADJECTIVE ,
+        meanings: [
+            {explanation: "of an extent, amount, or intensity considerably above the normal or average.",
+                exampleSentences: ["the article was of great interest"], de: "groß"}
+        ]},
+    {source: "government", wordCategory: vt.WordCategoryEL.NOUN ,
+        meanings: [
+            {explanation: "the governing body of a nation, state, or community.",
+                exampleSentences: ["an agency of the federal government"], de: "regierung"}
+        ]},
+    {source: "guess", wordCategory: vt.WordCategoryEL.NOUN ,
+        meanings: [
+            {explanation: "an estimate or conjecture.",
+                exampleSentences: ["my guess is that within a year we will have a referendum"], de: "vermuten"}
+        ]},
+    {source: "guide", wordCategory: vt.WordCategoryEL.NOUN ,
+        meanings: [
+            {explanation: "a person who advises or shows the way to others.",
+                exampleSentences: ["this lady is going to act as our guide for the rest of the tour"], de: "führen"}
+        ]},
+    {source: "general", wordCategory: vt.WordCategoryEL.ADJECTIVE ,
+        meanings: [
+            {explanation: "affecting or concerning all or most people, places, or things; widespread.",
+                exampleSentences: ["books of general interest"], de: "allgemeines"}
+        ]},
+    {source: "heat\n", wordCategory: vt.WordCategoryEL.NOUN ,
+        meanings: [
+            {explanation: "the quality of being hot; high temperature.",
+                exampleSentences: ["it is sensitive to both heat and cold"], de: "hitze"}
+        ]},
+    {source: "hook", wordCategory: vt.WordCategoryEL.NOUN ,
+        meanings: [
+            {explanation: "a piece of metal or other material, curved or bent back at an angle",
+                exampleSentences: ["a picture hook"], de: "haken"}
+        ]},
+    {source: "happy", wordCategory: vt.WordCategoryEL.ADJECTIVE ,
+        meanings: [
+            {explanation: "feeling or showing pleasure or contentment.",
+                exampleSentences: ["Melissa came in looking happy and excited"], de: "glücklich"}
+        ]},
+    {source: "hard", wordCategory: vt.WordCategoryEL.ADJECTIVE ,
+        meanings: [
+            {explanation: "solid, firm, and resistant to pressure; not easily broken, bent, or pierced.",
+                exampleSentences: ["a hard mattress"], de: "hart"}
+        ]},
+    {source: "haste", wordCategory: vt.WordCategoryEL.NOUN ,
+        meanings: [
+            {explanation: "excessive speed or urgency of movement or action; hurry.",
+                exampleSentences: ["working with feverish haste"], de: "eile"}
+        ]},
+    {source: "hope", wordCategory: vt.WordCategoryEL.NOUN ,
+        meanings: [
+            {explanation: "a feeling of expectation and desire for a certain thing to happen.",
+                exampleSentences: ["he looked through her belongings in the hope of coming across some information"], de: "hoffnung"}
+        ]},
+    {source: "iron", wordCategory: vt.WordCategoryEL.NOUN ,
+        meanings: [
+            {explanation: "a strong, hard magnetic silvery-gray metal, the chemical element of atomic number 26.",
+                exampleSentences: ["This shining metal was not raw iron but hard steel, which bent the softer wrought-iron blades of the Gauls."], de: "eisen"}
+        ]},
+    {source: "journey", wordCategory: vt.WordCategoryEL.NOUN ,
+        meanings: [
+            {explanation: "an act of traveling from one place to another.",
+                exampleSentences: ["she went on a long journey"], de: "reise"}
+        ]},
+    {source: "jacket", wordCategory: vt.WordCategoryEL.NOUN ,
+        meanings: [
+            {explanation: "an outer garment extending either to the waist or the hips, typically having sleeves and a fastening down the front.",
+                exampleSentences: ["Often featuring a snap front and drawstring waist, this jacket maybe lined or unlined."], de: "jacke"}
+        ]},
+    {source: "july", wordCategory: vt.WordCategoryEL.NOUN ,
+        meanings: [
+            {explanation: "the seventh month of the year, in the northern hemisphere usually considered the second month of summer.",
+                exampleSentences: ["I had a letter from him in July"], de: "juli"}
+        ]},
+    {source: "kind", wordCategory: vt.WordCategoryEL.ADJECTIVE ,
+        meanings: [
+            {explanation: "having or showing a friendly, generous, and considerate nature.",
+                exampleSentences: ["she was a good, kind woman"], de: "nett"}
+        ]},
+    {source: "keep", wordCategory: vt.WordCategoryEL.VERB ,
+        meanings: [
+            {explanation: "have or retain possession of.",
+                exampleSentences: ["my father would keep the best for himself"], de: "behalten"}
+        ]},
+    {source: "know", wordCategory: vt.WordCategoryEL.VERB ,
+        meanings: [
+            {explanation: "be aware of through observation, inquiry, or information.",
+                exampleSentences: ["most people know that CFCs can damage the ozone layer"], de: "kennt"}
+        ]},
+    {source: "knowledge", wordCategory: vt.WordCategoryEL.NOUN ,
+        meanings: [
+            {explanation: "facts, information, and skills acquired by a person through experience or education; the theoretical or practical understanding of a subject.",
+                exampleSentences: ["a thirst for knowledge"], de: "wissen\n"}
+        ]},
+    {source: "knife", wordCategory: vt.WordCategoryEL.NOUN ,
+        meanings: [
+            {explanation: "an instrument composed of a blade fixed into a handle, used for cutting or as a weapon.",
+                exampleSentences: ["He studied the padded envelope for a moment, before pulling out a pocket knife and cutting into one of the ends."], de: "messer"}
+        ]},
+    {source: "leader", wordCategory: vt.WordCategoryEL.NOUN ,
+        meanings: [
+            {explanation: "the person who leads or commands a group, organization, or country.",
+                exampleSentences: ["the leader of a protest group"], de: "führer"}
+        ]},
+    {source: "lack", wordCategory: vt.WordCategoryEL.NOUN ,
+        meanings: [
+            {explanation: "the state of being without or not having enough of something.",
+                exampleSentences: ["the case was dismissed for lack of evidence"], de: "mangel"}
+        ]},
+    {source: "last", wordCategory: vt.WordCategoryEL.ADJECTIVE ,
+        meanings: [
+            {explanation: "coming after all others in time or order; final.",
+                exampleSentences: ["they caught the last bus"], de: "letzte"}
+        ]},
+    {source: "light", wordCategory: vt.WordCategoryEL.NOUN ,
+        meanings: [
+            {explanation: "having a considerable or sufficient amount of natural light; not dark.",
+                exampleSentences: ["the bedrooms are light and airy"], de: "licht"}
+        ]},
+    {source: "live", wordCategory: vt.WordCategoryEL.ADJECTIVE ,
+        meanings: [
+            {explanation: "not dead or inanimate; living.",
+                exampleSentences: ["live animals"], de: "leben"}
+        ]},
+    {source: "look", wordCategory: vt.WordCategoryEL.VERB ,
+        meanings: [
+            {explanation: "direct one's gaze toward someone or something or in a specified direction.",
+                exampleSentences: ["people were looking at him"], de: "aussehen"}
+        ]},
+    {source: "launch", wordCategory: vt.WordCategoryEL.NOUN ,
+        meanings: [
+            {explanation: "an act or an instance of launching something.",
+                exampleSentences: ["the launch of a new campaign against drinking and driving"], de: "starten"}
+        ]},
+    {source: "lunch", wordCategory: vt.WordCategoryEL.NOUN ,
+        meanings: [
+            {explanation: "a meal eaten in the middle of the day, typically one that is lighter or less formal than an evening meal.",
+                exampleSentences: ["a vegetarian lunch"], de: "mittagessen"}
+        ]},
+    {source: "length", wordCategory: vt.WordCategoryEL.VERB ,
+        meanings: [
+            {explanation: "the measurement or extent of something from end to end; the greater of two or the greatest of three dimensions of a body.",
+                exampleSentences: ["it can reach over two feet in length"], de: "länge"}
+        ]},
+    {source: "love", wordCategory: vt.WordCategoryEL.NOUN ,
+        meanings: [
+            {explanation: "an intense feeling of deep affection.",
+                exampleSentences: ["babies fill parents with intense feelings of love"], de: "liebe"}
+        ]},
+    {source: "moon", wordCategory: vt.WordCategoryEL.NOUN ,
+        meanings: [
+            {explanation: "the natural satellite of the earth, visible (chiefly at night) by reflected light from the sun.",
+                exampleSentences: ["If you calculate back a billion and a half years ago, the moon would have been in direct contact with the earth."], de: "Mond"}
+        ]},
+    {source: "make", wordCategory: vt.WordCategoryEL.VERB ,
+        meanings: [
+            {explanation: "form (something) by putting parts together or combining substances; construct; create.",
+                exampleSentences: ["my grandmother made a dress for me"], de: "machen"}
+        ]},
+    {source: "milk", wordCategory: vt.WordCategoryEL.NOUN ,
+        meanings: [
+            {explanation: "an opaque white fluid rich in fat and protein, secreted by female mammals for the nourishment of their young.",
+                exampleSentences: ["Mammals feed their newborn young with milk , a substance rich in fats and protein that is produced by modified sweat glands called mammary glands."], de: "milch"}
+        ]},
+    {source: "mood", wordCategory: vt.WordCategoryEL.NOUN ,
+        meanings: [
+            {explanation: "a temporary state of mind or feeling.",
+                exampleSentences: ["he appeared to be in a very good mood about something"], de: "stimmung"}
+        ]},
+    {source: "matter", wordCategory: vt.WordCategoryEL.NOUN ,
+        meanings: [
+            {explanation: "physical substance in general, as distinct from mind and spirit;",
+                exampleSentences: ["the structure and properties of matter"], de: "angelegenheit"}
+        ]},
+    {source: "measure", wordCategory: vt.WordCategoryEL.NOUN ,
+        meanings: [
+            {explanation: "a plan or course of action taken to achieve a particular purpose.",
+                exampleSentences: ["cost-cutting measures"], de: "messen"}
+        ]},
+    {source: "mean", wordCategory: vt.WordCategoryEL.ADJECTIVE ,
+        meanings: [
+            {explanation: "unwilling to give or share things, especially money; not generous.",
+                exampleSentences: ["she felt mean not giving a tip"], de: "bedeuten"}
+        ]},
+    {source: "master", wordCategory: vt.WordCategoryEL.NOUN ,
+        meanings: [
+            {explanation: "a man who has people working for him, especially servants or slaves.",
+                exampleSentences: ["he acceded to his master's wishes"], de: "meister"}
+        ]},
+    {source: "massive", wordCategory: vt.WordCategoryEL.ADJECTIVE ,
+        meanings: [
+            {explanation: "large and heavy or solid.",
+                exampleSentences: ["a massive rampart of stone"], de: "massiv"}
+        ]},
+    {source: "merge", wordCategory: vt.WordCategoryEL.VERB ,
+        meanings: [
+            {explanation: "combine or cause to combine to form a single entity.",
+                exampleSentences: ["the utility companies are cutting costs and merging with other companies"], de: "verschmelzen"}
+        ]},
+    {source: "nuke", wordCategory: vt.WordCategoryEL.NOUN ,
+        meanings: [
+            {explanation: "a nuclear weapon.",
+                exampleSentences: ["There's lots of data available online about suitcase nukes , and nuclear weapons generally."], de: "Kernwaffe"}
+        ]},
+    {source: "nice", wordCategory: vt.WordCategoryEL.ADJECTIVE ,
+        meanings: [
+            {explanation: "pleasant; agreeable; satisfactory.",
+                exampleSentences: ["we had a nice time"], de: "nett"}
+        ]},
+    {source: "notice", wordCategory: vt.WordCategoryEL.NOUN ,
+        meanings: [
+            {explanation: "attention; observation.",
+                exampleSentences: ["their silence did not escape my notice"], de: "beachten"}
+        ]},
+    {source: "necessary", wordCategory: vt.WordCategoryEL.ADJECTIVE ,
+        meanings: [
+            {explanation: "required to be done, achieved, or present; needed; essential.",
+                exampleSentences: ["members are admitted only after they have gained the necessary experience"], de: "notwendig"}
+        ]},
+    {source: "nature", wordCategory: vt.WordCategoryEL.NOUN ,
+        meanings: [
+            {explanation: "the phenomena of the physical world collectively, including plants, animals, the landscape, and other features and products of the earth, as opposed to humans or human creations.",
+                exampleSentences: ["the breathtaking beauty of nature"], de: "natur"}
+        ]},
+    {source: "number", wordCategory: vt.WordCategoryEL.NOUN ,
+        meanings: [
+            {explanation: "an arithmetical value, expressed by a word, symbol, or figure, representing a particular quantity",
+                exampleSentences: ["she dialed the number carefully"], de: "nummer"}
+        ]},
 ];
