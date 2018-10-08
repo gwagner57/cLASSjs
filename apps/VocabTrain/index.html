@@ -98,26 +98,35 @@
     <!-- ======================================================= -->
     <section id="Unit-Render" class="UI-Page">
       <!-- ======================================================= -->
-      <h1>Preview Learning Unit</h1>
+      <h1>Train your skills...</h1>
         <form>
-          <div>
+          <div id = "unitSelect">
             <label>Select learning unit: <select name="selectUnit"></select></label>
           </div>
-          <div class="field">
+          <div class="field" id = "unitId">
             <label>Number# <output name="id"></output></label>
           </div>
-          <div class="field">
+          <div class="field" id = "unitTitle">
             <label>Title: <output name="title"></output></label>
           </div>
-          <div class="field">
+          <div class="field" id="unitDesc">
             <label>Description: <output name="description"></output> </label>
           </div>
           <div id="problem1"></div>
-          <div>
+          <div id="exerciseSelect">
             <label>Select exercise: <select name="selectExercise"></select></label>
           </div>
-          <div id="exercise1"></div>
-          <div><button id="submit1" type="reset" onclick="vt.v.learnUnits.renderUnit.handleSubmitButtonClickEvent()">Finish exercise</button></div>
+            <div id="exercise1"></div>
+            <div id="results"></div>
+            <div class="field" id="takeProblem">
+                <label>  Input your answer: <input type="text" name="answer"/> </label>
+            </div>
+          <div><button id="submit1" type="reset" onclick="vt.v.learnUnits.renderUnit.handleSubmit1ButtonClickEvent()">Select this unit</button></div>
+          <div><button id="nextProblem" type="reset" onclick="vt.v.learnUnits.renderUnit.handleSubmit1ButtonClickEvent()">Next problem</button></div>
+          <div><button style="display: none" id="nextExercise" type="reset" onclick="vt.v.learnUnits.renderUnit.handleSubmit1ButtonClickEvent()">Next exercise</button></div>
+          <div><button style="display:none" id="goSelectUnit" type="reset" onclick="vt.v.learnUnits.renderUnit.setupUserInterface()">Finish</button></div>
+
+
         </form>
     </section>
       <!-- ======================================================= -->
@@ -125,16 +134,12 @@
       <!-- ======================================================= -->
       <h1>Show Unit Exercises</h1>
       <form>
-        <div>
-          <label>Select exercise: <select name="selectExercise"></select></label>
-        </div>
         <div class="field">
           <label>Type of exercises in unit: <output name="name"></output></label>
         </div>
         <div class="field">
           <label>NmrOfProblems: <output name="NumOfProblems"></output></label>
         </div>
-        <div id="problems"></div>
         <div>
           <button type="reset" onclick="vt.v.learnUnits.renderUnit.exerciseSelectClickEvent()">Start this exercise</button>
         </div>
