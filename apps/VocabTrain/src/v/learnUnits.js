@@ -1,8 +1,13 @@
 vt.v.learnUnits.renderUnit = { // Choose the Learning Unit
   var: exerciseNumber = 0,
   var: problemNumber = 0,
+  var: prevProbNumber = 0,
   var: unitNumber = 0,
   var: mistakes = 0,
+  var: totalMistakes = 0,
+  var: realStep = 0,
+  var: flag = null,
+  var: nextNum = 0,
   setupUserInterface: function () {
     var formUnEl = document.querySelector("section#Unit-Render > form"),
         unitSelectEl = formUnEl.elements["selectUnit"],
@@ -18,7 +23,11 @@ vt.v.learnUnits.renderUnit = { // Choose the Learning Unit
     if (exerciseEl.innerHTML !== "") {
       exerciseEl.innerHTML = "";
     }
+      document.getElementById("correctAns").style.display = "none";
+      document.getElementById("wrongAns").style.display = "none";
     if ( document.getElementById("exerciseSelect").style.display === "none") {
+      document.getElementById("correctAns").style.display = "none";
+      document.getElementById("wrongAns").style.display = "none";
       document.getElementById("unitSelect").style.display = "block";
       document.getElementById("unitId").style.display = "block";
       document.getElementById("unitTitle").style.display = "block";
@@ -65,8 +74,12 @@ vt.v.learnUnits.renderUnit = { // Choose the Learning Unit
         resultsEl = document.getElementById("results"),
         unitSelectEl = formUnEl.elements["selectUnit"],
         exSelectEl = formUnEl.elements["selectExercise"],
-        slots = {}, ke, unit = null,
+        slots = {}, ke, unit = null, l,
         exercise = null, divEl = null;
+    let target;
+    realStep++;
+    document.getElementById("correctAns").style.display = "none";
+    document.getElementById("wrongAns").style.display = "none";
     document.getElementById("exerciseSelect").style.display = "none";
     document.getElementById("unitSelect").style.display = "none";
     document.getElementById("unitId").style.display = "none";
@@ -83,35 +96,96 @@ vt.v.learnUnits.renderUnit = { // Choose the Learning Unit
       exerciseEl.style.display = "block";
       exerciseEl.innerHTML = "";
     }
-    var flag;
     var num = exerciseNumber + 1, pnum = problemNumber +1;
     exercise = vt.data.learnUnits[unitNumber-1].exercises[exerciseNumber];
-    if (problemNumber !== 0) {
-        mistakes++;
-        //if (!vt.MeaningVariant.instances.de[formUnEl.answer.value]) {
-          //  flag = false;
-        //} else {
-          //  flag = true;
-        //}   formUnEl.setCustomValidity( vt.RenderingForm.methods.checkCorrect(formUnEl.answer.value).message);
-    }
-    if (problemNumber !== exercise.problems.length /*&& flag === true/*&& formUnEl.checkValidity()*/){
+    if (problemNumber !== exercise.problems.length ){
       problemEl.innerHTML = "";
       if (problemNumber === 0) {
         exerciseEl.appendChild(dom.createElement("p", {content: "<b>Unit #" + unitNumber + ", exercise #" + num}));
         exerciseEl.appendChild(dom.createElement("p", {content:  "Contains "
             + exercise.problems.length + " problems. " + "<b>Task:</b> " + exercise.renderingForm}));
       }
-      var problem = exercise.problems[problemNumber];
-      problemEl.appendChild( dom.createElement( "p", {content: "<b>Problem #"+ pnum +"</b>: " + "'" + problem.source + "'" }));
-      problemEl.appendChild( document.createTextNode("Translation."));
-      problemEl.appendChild(dom.createElement("p", {content: "<b>If you sure the answer is correct, press 'next' button."}));
-      formUnEl.appendChild(problemEl);
-      formUnEl.appendChild(document.getElementById("takeProblem"));
-      formUnEl.appendChild(document.getElementById("nextProblem"));
-      problemNumber++;
+      let problem = exercise.problems[problemNumber];
+      let source = problem.source;
+      let dictEntry;
+      l = vt.data.dictEntries.length;
+      for (var i = 0; i < l; i++) {
+        dictEntry = vt.data.dictEntries[i];
+        if (dictEntry.source === source) {
+          break;
+        }
+      }
+      if (dictEntry) {
+          target = dictEntry.meanings[problem.meaningVariantNo-1].de;
+      }
+      if (realStep === 1 || target === formUnEl.answer.value) {
+        if (target === formUnEl.answer.value) {
+          problemNumber++;
+          problem = exercise.problems[problemNumber];
+          pnum++;
+          document.getElementById("correctAns").style.display = "block";
+          document.getElementById("wrongAns").style.display = "none";
+        } else if (!formUnEl.answer.value) {
+          document.getElementById("correctAns").style.display = "none";
+        }
+        if (problemNumber !== exercise.problems.length) {
+          problemEl.innerHTML = "";
+          problemEl.appendChild( dom.createElement( "p", {content: "<b>Problem #"+ pnum +"</b>: " + "'" + problem.source + "'" }));
+          problemEl.appendChild(dom.createElement("p", {content: "Translation. If you sure the answer is correct, press 'next' button."}));
+          formUnEl.appendChild(problemEl);
+          formUnEl.appendChild(document.getElementById("takeProblem"));
+          formUnEl.appendChild(document.getElementById("nextProblem"));
+        } else {
+          resultsEl.style.display = "block";
+          exerciseEl.style.display = "none";
+          document.getElementById("wrongAns").style.display = "none";
+          document.getElementById("correctAns").style.display = "none";
+          document.getElementById("nextExercise").style.display = "block";
+          document.getElementById("nextProblem").style.display = "none";
+          document.getElementById("takeProblem").style.display = "none";
+          document.getElementById("problem1").style.display = "none";
+          resultsEl.appendChild( dom.createElement( "p", {content: "<b>Congratulations! You have completed "
+              + num + " exercise. " +"</b>: " + "There was " + mistakes + " mistakes in this exercise" }));
+          formUnEl.appendChild(resultsEl);
+          totalMistakes += mistakes;
+          problemNumber = 0;
+          exerciseNumber++;
+          if (exerciseNumber >= unit.exercises.length){
+            resultsEl.innerHTML = "";
+            resultsEl.appendChild(document.createTextNode("Congratulations! You have completed" +
+                " all the exercises of this unit. Click 'Finish' button to move to unit selection."));
+            resultsEl.appendChild( dom.createElement( "p", {content: "<b>You have taken "
+                + totalMistakes + " mistakes. " +"</b>" + "It is a good result."}));
+            formUnEl.appendChild(resultsEl);
+            document.getElementById("nextExercise").style.display = "none";
+            document.getElementById("goSelectUnit").style.display = "block";
+            exerciseNumber = 0;
+            totalMistakes = 0;
+          }
+          mistakes = 0;
+        }
+        //nextNum = problemNumber + 1 ;
+        flag = true;
+        target = null;
+        realStep++;
+      } else {
+        if (flag) {
+          mistakes++;
+        }
+        document.getElementById("wrongAns").style.display = "block";
+        document.getElementById("correctAns").style.display = "none";
+        flag = false;
+        problemEl.appendChild( dom.createElement( "p", {content: "<b>Problem #"+ pnum +"</b>: " + "'" + problem.source + "'" }));
+        problemEl.appendChild(dom.createElement("p", {content: "Translation. If you sure the answer is correct, press 'next' button."}));
+        formUnEl.appendChild(problemEl);
+        formUnEl.appendChild(document.getElementById("takeProblem"));
+        formUnEl.appendChild(document.getElementById("nextProblem"));
+      }
     } else {
       resultsEl.style.display = "block";
       exerciseEl.style.display = "none";
+      document.getElementById("wrongAns").style.display = "none";
+      document.getElementById("correctAns").style.display = "none";
       document.getElementById("nextExercise").style.display = "block";
       document.getElementById("nextProblem").style.display = "none";
       document.getElementById("takeProblem").style.display = "none";
@@ -119,17 +193,22 @@ vt.v.learnUnits.renderUnit = { // Choose the Learning Unit
       resultsEl.appendChild( dom.createElement( "p", {content: "<b>Congratulations! You have completed "
          + num + " exercise. " +"</b>: " + "There was " + mistakes + " mistakes in this exercise" }));
       formUnEl.appendChild(resultsEl);
+      totalMistakes += mistakes;
       problemNumber = 0;
       exerciseNumber++;
       if (exerciseNumber >= unit.exercises.length){
         resultsEl.innerHTML = "";
         resultsEl.appendChild(document.createTextNode("Congratulations! You have completed" +
            " all the exercises of this unit. Click 'Finish' button to move to unit selection."));
+        resultsEl.appendChild( dom.createElement( "p", {content: "<b>You have taken "
+            + totalMistakes + " mistakes. " +"</b>" + "It is a good result."}));
         formUnEl.appendChild(resultsEl);
         document.getElementById("nextExercise").style.display = "none";
         document.getElementById("goSelectUnit").style.display = "block";
         exerciseNumber = 0;
+        totalMistakes = 0;
       }
+      mistakes = 0;
     }
   },
 

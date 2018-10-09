@@ -4,7 +4,7 @@
  */
 // main namespace and subnamespace definitions
 var vt = {
-  m: {},
+  m: { DictionaryEntry:{}},
   v: { dictEntries:{}, learnUnits:{}},
   c: { dictEntries:{}, learnUnits:{}},
   data: {dictEntries:{}, learnUnits:{}}

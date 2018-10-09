@@ -33,11 +33,9 @@ vt.data.learnUnits = [
   exercises: [
     {renderingForm: "Enter Text",
       problems: [
-        {source: "bulk", meaningVariantNo: 1},
-        {source: "razor", meaningVariantNo: 1},
-        {source: "bright", meaningVariantNo: 1}
+        {source: "bulk", meaningVariantNo: 1}
       ],
-    },
+    }/*,
       {renderingForm: "Enter Text",
         problems: [
           {source: "better", meaningVariantNo: 1},
@@ -49,7 +47,7 @@ vt.data.learnUnits = [
           {source: "bad", meaningVariantNo: 1},
           {source: "book", meaningVariantNo: 1}
         ],
-      }
+      }*/
     ]
   },
   {title: "Basic Vocabulary Unit 3",

@@ -18,12 +18,5 @@ vt.RenderingForm = new cLASS({
     "renderingMode": {range:"RenderingModeEL", label:"Rendering mode"}
   },
   methods: {
-    "checkCorrect": function (s) {
-      if (!vt.DictionaryEntry[s]) {
-        return "Wrong word";
-      } else {
-        throw NoConstraintViolation();
-      }
-    }
   }
 });

@@ -3,7 +3,8 @@
  * @author Gerd Wagner
  */
 vt.data.dictEntries = [
-  {source: "abandon", wordCategory: vt.WordCategoryEL.VERB,
+  {
+   source: "abandon", wordCategory: vt.WordCategoryEL.VERB,
    meanings: [
      {explanation: "to leave and never return to someone who needs protection or help",
       exampleSentences: ["The child had been abandoned (by his parents) as an infant.", "He abandoned his family."],
