@@ -150,6 +150,7 @@ vt.v.learnUnits.renderUnit = { // Choose the Learning Unit
           totalMistakes += mistakes;
           problemNumber = 0;
           exerciseNumber++;
+          realStep = 0;
           if (exerciseNumber >= unit.exercises.length){
             resultsEl.innerHTML = "";
             resultsEl.appendChild(document.createTextNode("Congratulations! You have completed" +
@@ -167,9 +168,8 @@ vt.v.learnUnits.renderUnit = { // Choose the Learning Unit
         //nextNum = problemNumber + 1 ;
         flag = true;
         target = null;
-        realStep++;
       } else {
-        if (flag) {
+        if (flag && realStep !== 1) {
           mistakes++;
         }
         document.getElementById("wrongAns").style.display = "block";
@@ -196,6 +196,7 @@ vt.v.learnUnits.renderUnit = { // Choose the Learning Unit
       totalMistakes += mistakes;
       problemNumber = 0;
       exerciseNumber++;
+      realStep = 0;
       if (exerciseNumber >= unit.exercises.length){
         resultsEl.innerHTML = "";
         resultsEl.appendChild(document.createTextNode("Congratulations! You have completed" +

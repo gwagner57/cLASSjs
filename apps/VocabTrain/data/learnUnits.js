@@ -35,19 +35,19 @@ vt.data.learnUnits = [
       problems: [
         {source: "bulk", meaningVariantNo: 1}
       ],
-    }/*,
+    },
       {renderingForm: "Enter Text",
         problems: [
-          {source: "better", meaningVariantNo: 1},
+          /*{source: "better", meaningVariantNo: 1},
           {source: "basics", meaningVariantNo: 1},
           {source: "butterfly", meaningVariantNo: 1},
           {source: "benefit", meaningVariantNo: 1},
           {source: "big", meaningVariantNo: 1},
           {source: "bag", meaningVariantNo: 1},
-          {source: "bad", meaningVariantNo: 1},
-          {source: "book", meaningVariantNo: 1}
+          {source: "bad", meaningVariantNo: 1},*/
+          {source: "abandon", meaningVariantNo: 1}
         ],
-      }*/
+      }
     ]
   },
   {title: "Basic Vocabulary Unit 3",
