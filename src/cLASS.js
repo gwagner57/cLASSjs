@@ -50,12 +50,12 @@ function cLASS (classSlots) {
     }
     // assign own properties
     Object.keys( propDefs).forEach( function (p) {
-      var range = propDefs[p].range, Class=null,
+      var pDef = propDefs[p], range = pDef.range, Class=null,
           val, rangeTypes=[], i=0, validationResult=null;
-      if (typeof instanceSlots === "object" && instanceSlots[p]) {
+      if (typeof instanceSlots === "object" && p in instanceSlots) {
         // property p has an initialization slot
         val = instanceSlots[p];
-        validationResult = cLASS.check( p, propDefs[p], val);
+        validationResult = cLASS.check( p, pDef, val);
         if (!(validationResult instanceof NoConstraintViolation)) throw validationResult;
         // is range a class (or class disjunction)?
         if (typeof range === "string" && typeof val !== "object" &&
@@ -78,15 +78,23 @@ function cLASS (classSlots) {
             this[p] = cLASS[range].instances[String(val)] || val;
           }
         } else this[p] = val;
-      } else if (propDefs[p].initialValue !== undefined) {  // assign initial value
-        if (typeof propDefs[p].initialValue === "function") {
+      } else if (pDef.initialValue !== undefined) {  // assign initial value
+        if (typeof pDef.initialValue === "function") {
           propsWithInitialValFunc.push(p);
-        } else this[p] = propDefs[p].initialValue;
+        } else this[p] = pDef.initialValue;
       } else if (p === "id" && range === "AutoNumber") {    // assign auto-ID
-        if (typeof this.constructor.getAutoId === "function") this[p] = this.constructor.getAutoId();
-        else if (this.constructor.idCounter !== undefined) this[p] = ++this.constructor.idCounter;
-      } else if (!propDefs[p].optional) {  // assign default value to mandatory properties
-        if (cLASS.isIntegerType(range) || cLASS.isDecimalType(range)) {
+        if (typeof this.constructor.getAutoId === "function") {
+          this[p] = this.constructor.getAutoId();
+        } else if (this.constructor.idCounter !== undefined) {
+          this[p] = ++this.constructor.idCounter;
+        }
+      } else if (!pDef.optional) {  // assign default values to mandatory properties
+        if (pDef.maxCard > 1) {
+          if (pDef.minCard === 0) {  // optional multi-valued property
+            if (pDef.range in cLASS && !pDef.isOrdered) this[p] = {};  // map
+            else this[p] = [];  // array list
+          } else throw "A non-empty collection value for "+ p +" is required!";
+        } else if (cLASS.isIntegerType(range) || cLASS.isDecimalType(range)) {
           this[p] = 0;
         } else if (range === "String") {
           this[p] = "";
@@ -95,18 +103,18 @@ function cLASS (classSlots) {
         } else if (typeof range === "object") {
           if (["Array", "ArrayList"].includes(range.dataType)) {
             this[p] = [];
-          } else if (range["dataType"] === "Map") {
+          } else if (range.dataType === "Map") {
             this[p] = {};
           }
-        }
+        } else throw "A value for "+ p +" is required when creating a(n) "+ classSlots.Name;
       }
       // initialize historical properties
-      if (propDefs[p].historySize) {
+      if (pDef.historySize) {
         this.history = this.history || {};  // a map
-        this.history[p] = propDefs[p].decimalPlaces ?
-            new cLASS.RingBuffer( propDefs[p].range, propDefs[p].historySize,
-                {decimalPlaces: propDefs[p].decimalPlaces}) :
-            new cLASS.RingBuffer( propDefs[p].range, propDefs[p].historySize);
+        this.history[p] = pDef.decimalPlaces ?
+            new cLASS.RingBuffer( pDef.range, pDef.historySize,
+                {decimalPlaces: pDef.decimalPlaces}) :
+            new cLASS.RingBuffer( pDef.range, pDef.historySize);
       }
     }, this);
     // call the functions for initial value expressions
@@ -255,9 +263,11 @@ function cLASS (classSlots) {
       if (val === undefined || val === null) return "";
       if (propDecl.maxCard && propDecl.maxCard > 1) {
         if (Array.isArray( val)) {
-          valuesToConvert = val.slice(0);  // clone;
+          valuesToConvert = val.length>0 ? val.slice(0) : [];  // clone;
+        } else if (typeof val === "object") {
+          valuesToConvert = Object.keys( val);
         } else console.log("The value of a multi-valued " +
-            "datatype property like "+ prop +"must be an array!");
+            "property like "+ prop +" must be an array or a map!");
       } else valuesToConvert = [val];
       valuesToConvert.forEach( function (v,i) {
         if (typeof propDecl.val2str === "function") {
@@ -283,13 +293,16 @@ function cLASS (classSlots) {
           propDecl.stringified = true;
         }
       }, this);
-      displayStr = valuesToConvert[0];
-      if (propDecl.maxCard && propDecl.maxCard > 1) {
-        displayStr = "[" + displayStr;
-        for (k=1; k < valuesToConvert.length; k++) {
-          displayStr += listSep + valuesToConvert[k];
+      if (valuesToConvert.length === 0) displayStr = "[]";
+      else {
+        displayStr = valuesToConvert[0];
+        if (propDecl.maxCard && propDecl.maxCard > 1) {
+          displayStr = "[" + displayStr;
+          for (k=1; k < valuesToConvert.length; k++) {
+            displayStr += listSep + valuesToConvert[k];
+          }
+          displayStr = displayStr + "]";
         }
-        displayStr = displayStr + "]";
       }
       return displayStr;
     };
@@ -379,7 +392,7 @@ cLASS.isIntegerType = function (T) {
  cLASS.check = function (fld, decl, val, optParams) {
    var constrVio=null, valuesToCheck=[],
        msg = decl.patternMessage || "",
-       minCard = decl.minCard || 0,  // by default, a multi-valued property is optional
+       minCard = decl.minCard!=="umdefined" ? decl.minCard : decl.optional?0:1,  // by default, a property is mandatory
        maxCard = decl.maxCard || 1,  // by default, a property is single-valued
        min = decl.min || 0, max = decl.max,
        range = decl.range,
@@ -398,7 +411,7 @@ cLASS.isIntegerType = function (T) {
      if (Array.isArray( val) ) {
        valuesToCheck = val;
      } else if (typeof range === "string" && cLASS[range]) {
-       if (!decl.ordered) {
+       if (!decl.isOrdered) {
          valuesToCheck = Object.keys( val).map( function (id) {
            return val[id];
          });
@@ -766,7 +779,6 @@ cLASS.isIntegerType = function (T) {
            fld +" must not have more than "+ maxCard +" members!");
      }
    }
-   //val = maxCard === 1 ? valuesToCheck[0] : valuesToCheck;
    // return deserialized value available in validationResult.checkedValue
    return new NoConstraintViolation( maxCard === 1 ? valuesToCheck[0] : valuesToCheck);
  };
