@@ -369,7 +369,7 @@ util.cloneObject = function (o) {
  * to a new (untyped) object.
  * @author Gerd Wagner
  * @return {object}  The merge result.
- */
+ *
 util.mergeObjects = function () {
   var i=0, k=0, obj=null, mergeObj={}, keys=[], key="";
   for (i=0; i < arguments.length; i++) {
@@ -384,6 +384,7 @@ util.mergeObjects = function () {
   }
   return mergeObj;
 };
+ */
 /**
  * Swap two elements of an array 
  * using the ES6 method Object.assign for creating a shallow clone of an object
@@ -410,7 +411,7 @@ util.shuffleArray = function (a) {
   }
 };
 /**
- * Computes the Cartesian Product of an array of arrays
+ * Compute the Cartesian Product of an array of arrays
  * From https://stackoverflow.com/a/36234242/2795909
  * @param {Array} arr - An array of arrays of values to be combined
  */
@@ -423,6 +424,16 @@ util.cartesianProduct = function (arr) {
     }).reduce( function (a,b) {return a.concat(b)}, [])
   }, [[]])
 };
+
+var math = {};
+/**
+ * Compute the sum of an array of numbers
+ * @param {Array} arr - An array of numbers
+ */
+math.sum = function (arr) {
+  function add( a, b) {return a + b;}
+  return arr.reduce( add, 0);
+}
 
 /**
  * Predefined class for creating enumerations as special JS objects.
@@ -551,31 +562,34 @@ function cLASS (classSlots) {
   var propDefs = classSlots.properties || {},  // property declarations
       methods = classSlots.methods || {},
       supertypeName = classSlots.supertypeName,
-      superclass=null, constr=null,
+      superclass=null, constr=null, missingRangeProp="",
       propsWithInitialValFunc = [];
   // check Class definition constraints
   if (supertypeName && !cLASS[supertypeName]) {
     throw "Specified supertype "+ supertypeName +" has not been defined!";
   }
   if (!Object.keys( propDefs).every( function (p) {
+        if (!propDefs[p].range) missingRangeProp = p;
         return (propDefs[p].range !== undefined);
       }) ) {
-    throw "No range defined for some property of class "+ classSlots.Name +" !";
+    throw "No range defined for property "+ missingRangeProp +
+        " of class "+ classSlots.Name +" !";
   }
-  // define a constructor function for creating a new cLASS
+  // define a constructor function for creating a new object
   constr = function (instanceSlots) {
+    if (!instanceSlots) return;
     if (supertypeName) {
       // invoke supertype constructor
       cLASS[supertypeName].call( this, instanceSlots);
     }
     // assign own properties
     Object.keys( propDefs).forEach( function (p) {
-      var range = propDefs[p].range, Class=null,
+      var pDef = propDefs[p], range = pDef.range, Class=null,
           val, rangeTypes=[], i=0, validationResult=null;
-      if (typeof instanceSlots === "object" && instanceSlots[p]) {
+      if (typeof instanceSlots === "object" && p in instanceSlots) {
         // property p has an initialization slot
         val = instanceSlots[p];
-        validationResult = cLASS.check( p, propDefs[p], val);
+        validationResult = cLASS.check( p, pDef, val);
         if (!(validationResult instanceof NoConstraintViolation)) throw validationResult;
         // is range a class (or class disjunction)?
         if (typeof range === "string" && typeof val !== "object" &&
@@ -598,15 +612,23 @@ function cLASS (classSlots) {
             this[p] = cLASS[range].instances[String(val)] || val;
           }
         } else this[p] = val;
-      } else if (propDefs[p].initialValue !== undefined) {  // assign initial value
-        if (typeof propDefs[p].initialValue === "function") {
+      } else if (pDef.initialValue !== undefined) {  // assign initial value
+        if (typeof pDef.initialValue === "function") {
           propsWithInitialValFunc.push(p);
-        } else this[p] = propDefs[p].initialValue;
+        } else this[p] = pDef.initialValue;
       } else if (p === "id" && range === "AutoNumber") {    // assign auto-ID
-        if (typeof this.constructor.getAutoId === "function") this[p] = this.constructor.getAutoId();
-        else if (this.constructor.idCounter !== undefined) this[p] = ++this.constructor.idCounter;
-      } else if (!propDefs[p].optional) {  // assign default value to mandatory properties
-        if (cLASS.isIntegerType(range) || cLASS.isDecimalType(range)) {
+        if (typeof this.constructor.getAutoId === "function") {
+          this[p] = this.constructor.getAutoId();
+        } else if (this.constructor.idCounter !== undefined) {
+          this[p] = ++this.constructor.idCounter;
+        }
+      } else if (!pDef.optional) {  // assign default values to mandatory properties
+        if (pDef.maxCard > 1) {
+          if (pDef.minCard === 0) {  // optional multi-valued property
+            if (pDef.range in cLASS && !pDef.isOrdered) this[p] = {};  // map
+            else this[p] = [];  // array list
+          } else throw "A non-empty collection value for "+ p +" is required!";
+        } else if (cLASS.isIntegerType(range) || cLASS.isDecimalType(range)) {
           this[p] = 0;
         } else if (range === "String") {
           this[p] = "";
@@ -615,18 +637,21 @@ function cLASS (classSlots) {
         } else if (typeof range === "object") {
           if (["Array", "ArrayList"].includes(range.dataType)) {
             this[p] = [];
-          } else if (range["dataType"] === "Map") {
+          } else if (range.dataType === "Map") {
             this[p] = {};
           }
+        } else {
+          throw "A value for "+ p +" is required when creating a(n) "+ classSlots.Name;
+          console.log("instanceSlots = ", JSON.stringify(instanceSlots));
         }
       }
       // initialize historical properties
-      if (propDefs[p].historySize) {
+      if (pDef.historySize) {
         this.history = this.history || {};  // a map
-        this.history[p] = propDefs[p].decimalPlaces ?
-            new cLASS.RingBuffer( propDefs[p].range, propDefs[p].historySize,
-                {decimalPlaces: propDefs[p].decimalPlaces}) :
-            new cLASS.RingBuffer( propDefs[p].range, propDefs[p].historySize);
+        this.history[p] = pDef.decimalPlaces ?
+            new cLASS.RingBuffer( pDef.range, pDef.historySize,
+                {decimalPlaces: pDef.decimalPlaces}) :
+            new cLASS.RingBuffer( pDef.range, pDef.historySize);
       }
     }, this);
     // call the functions for initial value expressions
@@ -650,6 +675,7 @@ function cLASS (classSlots) {
   constr.Name = classSlots.Name;
   if (classSlots.isComplexDatatype) constr.isComplexDatatype = true;
   if (classSlots.isAbstract) constr.isAbstract = true;
+  if (classSlots.label) constr.label = classSlots.label;
   if (classSlots.shortLabel) constr.shortLabel = classSlots.shortLabel;
   if (classSlots.primaryKey) constr.primaryKey = classSlots.primaryKey;
   if (classSlots.tableName) constr.tableName = classSlots.tableName;
@@ -775,9 +801,11 @@ function cLASS (classSlots) {
       if (val === undefined || val === null) return "";
       if (propDecl.maxCard && propDecl.maxCard > 1) {
         if (Array.isArray( val)) {
-          valuesToConvert = val.slice(0);  // clone;
+          valuesToConvert = val.length>0 ? val.slice(0) : [];  // clone;
+        } else if (typeof val === "object") {
+          valuesToConvert = Object.keys( val);
         } else console.log("The value of a multi-valued " +
-            "datatype property like "+ prop +"must be an array!");
+            "property like "+ prop +" must be an array or a map!");
       } else valuesToConvert = [val];
       valuesToConvert.forEach( function (v,i) {
         if (typeof propDecl.val2str === "function") {
@@ -803,13 +831,16 @@ function cLASS (classSlots) {
           propDecl.stringified = true;
         }
       }, this);
-      displayStr = valuesToConvert[0];
-      if (propDecl.maxCard && propDecl.maxCard > 1) {
-        displayStr = "[" + displayStr;
-        for (k=1; k < valuesToConvert.length; k++) {
-          displayStr += listSep + valuesToConvert[k];
+      if (valuesToConvert.length === 0) displayStr = "[]";
+      else {
+        displayStr = valuesToConvert[0];
+        if (propDecl.maxCard && propDecl.maxCard > 1) {
+          displayStr = "[" + displayStr;
+          for (k=1; k < valuesToConvert.length; k++) {
+            displayStr += listSep + valuesToConvert[k];
+          }
+          displayStr = displayStr + "]";
         }
-        displayStr = displayStr + "]";
       }
       return displayStr;
     };
@@ -899,7 +930,7 @@ cLASS.isIntegerType = function (T) {
  cLASS.check = function (fld, decl, val, optParams) {
    var constrVio=null, valuesToCheck=[],
        msg = decl.patternMessage || "",
-       minCard = decl.minCard || 0,  // by default, a multi-valued property is optional
+       minCard = decl.minCard!=="umdefined" ? decl.minCard : decl.optional?0:1,  // by default, a property is mandatory
        maxCard = decl.maxCard || 1,  // by default, a property is single-valued
        min = decl.min || 0, max = decl.max,
        range = decl.range,
@@ -918,7 +949,7 @@ cLASS.isIntegerType = function (T) {
      if (Array.isArray( val) ) {
        valuesToCheck = val;
      } else if (typeof range === "string" && cLASS[range]) {
-       if (!decl.ordered) {
+       if (!decl.isOrdered) {
          valuesToCheck = Object.keys( val).map( function (id) {
            return val[id];
          });
@@ -1286,7 +1317,6 @@ cLASS.isIntegerType = function (T) {
            fld +" must not have more than "+ maxCard +" members!");
      }
    }
-   //val = maxCard === 1 ? valuesToCheck[0] : valuesToCheck;
    // return deserialized value available in validationResult.checkedValue
    return new NoConstraintViolation( maxCard === 1 ? valuesToCheck[0] : valuesToCheck);
  };

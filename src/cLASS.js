@@ -31,19 +31,22 @@ function cLASS (classSlots) {
   var propDefs = classSlots.properties || {},  // property declarations
       methods = classSlots.methods || {},
       supertypeName = classSlots.supertypeName,
-      superclass=null, constr=null,
+      superclass=null, constr=null, missingRangeProp="",
       propsWithInitialValFunc = [];
   // check Class definition constraints
   if (supertypeName && !cLASS[supertypeName]) {
     throw "Specified supertype "+ supertypeName +" has not been defined!";
   }
   if (!Object.keys( propDefs).every( function (p) {
+        if (!propDefs[p].range) missingRangeProp = p;
         return (propDefs[p].range !== undefined);
       }) ) {
-    throw "No range defined for some property of class "+ classSlots.Name +" !";
+    throw "No range defined for property "+ missingRangeProp +
+        " of class "+ classSlots.Name +" !";
   }
-  // define a constructor function for creating a new cLASS
+  // define a constructor function for creating a new object
   constr = function (instanceSlots) {
+    if (!instanceSlots) return;
     if (supertypeName) {
       // invoke supertype constructor
       cLASS[supertypeName].call( this, instanceSlots);
@@ -106,7 +109,10 @@ function cLASS (classSlots) {
           } else if (range.dataType === "Map") {
             this[p] = {};
           }
-        } else throw "A value for "+ p +" is required when creating a(n) "+ classSlots.Name;
+        } else {
+          throw "A value for "+ p +" is required when creating a(n) "+ classSlots.Name;
+          console.log("instanceSlots = ", JSON.stringify(instanceSlots));
+        }
       }
       // initialize historical properties
       if (pDef.historySize) {
@@ -138,6 +144,7 @@ function cLASS (classSlots) {
   constr.Name = classSlots.Name;
   if (classSlots.isComplexDatatype) constr.isComplexDatatype = true;
   if (classSlots.isAbstract) constr.isAbstract = true;
+  if (classSlots.label) constr.label = classSlots.label;
   if (classSlots.shortLabel) constr.shortLabel = classSlots.shortLabel;
   if (classSlots.primaryKey) constr.primaryKey = classSlots.primaryKey;
   if (classSlots.tableName) constr.tableName = classSlots.tableName;
