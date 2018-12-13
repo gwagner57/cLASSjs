@@ -800,8 +800,9 @@ oBJECTvIEW.createUiFromViewModel = function (viewModel) {
         });
       }
       fldEl.addEventListener("change", function () {
-        var v = fldEl.value,
-            validationResult = cLASS.check( fld, fldDef, v);
+        var v = fldEl.value, validationResult = {};
+        if (typeof fldDef.str2val === "function") v = fldDef.str2val(v);
+        validationResult = cLASS.check( fld, fldDef, v);
         if (!validateOnInput) fldEl.setCustomValidity( validationResult.message);
         // UI element to view model property data binding (top-down)
         if (fldEl.validity.valid) fieldValues[fld] = validationResult.checkedValue;
@@ -811,14 +812,16 @@ oBJECTvIEW.createUiFromViewModel = function (viewModel) {
     dataBinding[fld] = fldEl;
     // render text input element
     fldEl.name = fld;
-    if (typeof fldDef.fieldValue === "function") {
-      fldEl.value = fldDef.fieldValue();
-    } else if (typeof fldDef.fieldValue === "object") {
-      fldEl.value = JSON.stringify( fldDef.fieldValue);
+    if (typeof fldDef.value === "function") {
+      fldEl.value = fldDef.value();
+    } else if (typeof fldDef.val2str === "function") {
+      fldEl.value = fldDef.val2str( fldDef.value);
+    } else if (typeof fldDef.value === "object") {
+      fldEl.value = JSON.stringify( fldDef.value);
     } else {
-      fldEl.value = fldDef.fieldValue || fldDef.initialValue || "";
+      fldEl.value = fldDef.value || fldDef.initialValue || "";
     }
-    fldEl.size = 7;
+    fldEl.size = fldDef.inputFieldSize || 7;
     if (fldDef.hint) lblEl.title = fldDef.hint;
     lblEl.textContent = fldDef.label;
     lblEl.appendChild( fldEl);

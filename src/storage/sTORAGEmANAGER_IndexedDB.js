@@ -33,7 +33,9 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
         return Promise.all( records.map( function (rec) {return os.add( rec);}))
             .then( function () {return tx.complete;});
       }).then( resolve)
-      .catch( function (err) {console.log( err.name +": "+ err.message);});
+      .catch( function (err) {
+        console.log( err.name +": "+ err.message +"Table: "+ tableName);}
+      );
     });
   },
   //------------------------------------------------
@@ -78,7 +80,9 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
         os.put( slots);
         return tx.complete;
       }).then( resolve)
-      .catch( function (err) {console.log( err.name +": "+ err.message);});
+      .catch( function (err) {
+        console.log( err.name +": "+ err.message +"Table: "+ tableName);}
+      );
     });
   },
   //------------------------------------------------
