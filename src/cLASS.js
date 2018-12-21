@@ -51,7 +51,7 @@ function cLASS (classSlots) {
       // invoke supertype constructor
       cLASS[supertypeName].call( this, instanceSlots);
     }
-    // assign own properties
+    // assign own properties  TODO: use the checked value from validationResult
     Object.keys( propDefs).forEach( function (p) {
       var pDef = propDefs[p], range = pDef.range, Class=null,
           val, rangeTypes=[], i=0, validationResult=null;
@@ -60,9 +60,12 @@ function cLASS (classSlots) {
         val = instanceSlots[p];
         validationResult = cLASS.check( p, pDef, val);
         if (!(validationResult instanceof NoConstraintViolation)) throw validationResult;
-        // is range a class (or class disjunction)?
-        if (typeof range === "string" && typeof val !== "object" &&
+        // is range a cLASS collection datatype?
+        if (typeof range === "object" && range.dataType !== undefined) {
+          this[p] = Array.isArray( val) ? val.slice(0) : Object.assign({}, val);  // assign clone
+        } else if (typeof range === "string" && typeof val !== "object" &&
             (cLASS[range] || range.includes("|"))) {
+          // is range a class (or class disjunction)?
           if (range.includes("|")) {
             rangeTypes = range.split("|");
             for (i=0; i < rangeTypes.length; i++) {
@@ -133,6 +136,8 @@ function cLASS (classSlots) {
         if (!propDefs[f]) this[f] = instanceSlots[f];
       }, this);
     }
+    // take care of cLASS-specific provisions (e.g., update a materialized view)
+    if ("onConstruction" in methods) this.onConstruction();
     // is the class neither a complex DT nor abstract and does the object have an ID slot?
     if (!classSlots.isComplexDatatype && !classSlots.isAbstract && "id" in this) {
       // add new object to the population/extension of the class
@@ -627,6 +632,7 @@ cLASS.isIntegerType = function (T) {
                    " of property '"+ fld +"' is not an ID of any " + range + " object!");
              }
            } else if (cLASS[range].isComplexDatatype && typeof v === "object") {
+             v = Object.assign({}, v);  // use a clone
              // v is a record that must comply with the complex datatype
              recFldNames = Object.keys(v);
              propDefs = cLASS[range].properties;

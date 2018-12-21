@@ -582,7 +582,7 @@ function cLASS (classSlots) {
       // invoke supertype constructor
       cLASS[supertypeName].call( this, instanceSlots);
     }
-    // assign own properties
+    // assign own properties  TODO: use the checked value from validationResult
     Object.keys( propDefs).forEach( function (p) {
       var pDef = propDefs[p], range = pDef.range, Class=null,
           val, rangeTypes=[], i=0, validationResult=null;
@@ -591,9 +591,12 @@ function cLASS (classSlots) {
         val = instanceSlots[p];
         validationResult = cLASS.check( p, pDef, val);
         if (!(validationResult instanceof NoConstraintViolation)) throw validationResult;
-        // is range a class (or class disjunction)?
-        if (typeof range === "string" && typeof val !== "object" &&
+        // is range a cLASS collection datatype?
+        if (typeof range === "object" && range.dataType !== undefined) {
+          this[p] = Array.isArray( val) ? val.slice(0) : Object.assign({}, val);  // assign clone
+        } else if (typeof range === "string" && typeof val !== "object" &&
             (cLASS[range] || range.includes("|"))) {
+          // is range a class (or class disjunction)?
           if (range.includes("|")) {
             rangeTypes = range.split("|");
             for (i=0; i < rangeTypes.length; i++) {
@@ -664,6 +667,8 @@ function cLASS (classSlots) {
         if (!propDefs[f]) this[f] = instanceSlots[f];
       }, this);
     }
+    // take care of cLASS-specific provisions (e.g., update a materialized view)
+    if ("onConstruction" in methods) this.onConstruction();
     // is the class neither a complex DT nor abstract and does the object have an ID slot?
     if (!classSlots.isComplexDatatype && !classSlots.isAbstract && "id" in this) {
       // add new object to the population/extension of the class
@@ -1158,6 +1163,7 @@ cLASS.isIntegerType = function (T) {
                    " of property '"+ fld +"' is not an ID of any " + range + " object!");
              }
            } else if (cLASS[range].isComplexDatatype && typeof v === "object") {
+             v = Object.assign({}, v);  // use a clone
              // v is a record that must comply with the complex datatype
              recFldNames = Object.keys(v);
              propDefs = cLASS[range].properties;
@@ -2537,8 +2543,9 @@ oBJECTvIEW.createUiFromViewModel = function (viewModel) {
         });
       }
       fldEl.addEventListener("change", function () {
-        var v = fldEl.value,
-            validationResult = cLASS.check( fld, fldDef, v);
+        var v = fldEl.value, validationResult = {};
+        if (typeof fldDef.str2val === "function") v = fldDef.str2val(v);
+        validationResult = cLASS.check( fld, fldDef, v);
         if (!validateOnInput) fldEl.setCustomValidity( validationResult.message);
         // UI element to view model property data binding (top-down)
         if (fldEl.validity.valid) fieldValues[fld] = validationResult.checkedValue;
@@ -2548,14 +2555,16 @@ oBJECTvIEW.createUiFromViewModel = function (viewModel) {
     dataBinding[fld] = fldEl;
     // render text input element
     fldEl.name = fld;
-    if (typeof fldDef.fieldValue === "function") {
-      fldEl.value = fldDef.fieldValue();
-    } else if (typeof fldDef.fieldValue === "object") {
-      fldEl.value = JSON.stringify( fldDef.fieldValue);
+    if (typeof fldDef.value === "function") {
+      fldEl.value = fldDef.value();
+    } else if (typeof fldDef.val2str === "function") {
+      fldEl.value = fldDef.val2str( fldDef.value);
+    } else if (typeof fldDef.value === "object") {
+      fldEl.value = JSON.stringify( fldDef.value);
     } else {
-      fldEl.value = fldDef.fieldValue || fldDef.initialValue || "";
+      fldEl.value = fldDef.value || fldDef.initialValue || "";
     }
-    fldEl.size = 7;
+    fldEl.size = fldDef.inputFieldSize || 7;
     if (fldDef.hint) lblEl.title = fldDef.hint;
     lblEl.textContent = fldDef.label;
     lblEl.appendChild( fldEl);
@@ -3613,7 +3622,9 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
         return Promise.all( records.map( function (rec) {return os.add( rec);}))
             .then( function () {return tx.complete;});
       }).then( resolve)
-      .catch( function (err) {console.log( err.name +": "+ err.message);});
+      .catch( function (err) {
+        console.log( err.name +": "+ err.message +"Table: "+ tableName);}
+      );
     });
   },
   //------------------------------------------------
@@ -3658,7 +3669,9 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
         os.put( slots);
         return tx.complete;
       }).then( resolve)
-      .catch( function (err) {console.log( err.name +": "+ err.message);});
+      .catch( function (err) {
+        console.log( err.name +": "+ err.message +"Table: "+ tableName);}
+      );
     });
   },
   //------------------------------------------------
