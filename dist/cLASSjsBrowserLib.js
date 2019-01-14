@@ -428,12 +428,28 @@ util.cartesianProduct = function (arr) {
 var math = {};
 /**
  * Compute the sum of an array of numbers
- * @param {Array} arr - An array of numbers
+ * @param {Array} data - An array of numbers
  */
-math.sum = function (arr) {
+math.sum = function (data) {
   function add( a, b) {return a + b;}
-  return arr.reduce( add, 0);
-}
+  return data.reduce( add, 0);
+};
+/**
+ * Compute the arithmetic mean of an array of numbers
+ * @param {Array} data - An array of numbers
+ */
+math.mean = function (data) {
+  return math.sum( data) / data.length;
+};
+/**
+ * Compute the standard deviation of an array of numbers
+ * @param {Array} data - An array of numbers
+ */
+math.stdDev = function (data) {
+  var m = math.mean( data);
+  return Math.sqrt( data.reduce( function (acc, x) {
+    return acc + Math.pow( x - m, 2);}, 0) / (data.length - 1));
+};
 
 /**
  * Predefined class for creating enumerations as special JS objects.
