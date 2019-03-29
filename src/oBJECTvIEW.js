@@ -125,6 +125,11 @@ var oBJECTvIEW = function (slots) {
           "need to be two-part strings with a dot as separator!");
     }
   }
+  // check if i18n translation function is defined
+  if (typeof i18n !== "object" || !i18n.t) {
+    // define dummy function
+    i18n = {t: function (txt) {return txt;}}
+  }
   if (multipleModelObjects) {
     this.modelObjects = slots.modelObjects;
   } else {
@@ -176,13 +181,17 @@ var oBJECTvIEW = function (slots) {
           }
           this.fields[fld].moName = mo.objectName;
           this.fields[fld].inputOutputMode = "I/O";
+          this.fields[fld].label = i18n.t( this.fields[fld].label);
+          if (this.fields[fld].hint) {
+            this.fields[fld].hint = i18n.t( this.fields[fld].hint);
+          }
           fldOrdEl.push( fld);
         } else if (typeof fld === "object") {  // field definition
           properties = this.modelObject.properties;
           this.fields[fld.name] = {
             moName: this.modelObject.objectName,
-            label: fld.label || properties[fld.name].label,
-            hint: fld.hint || properties[fld.name].hint,
+            label: i18n.t( fld.label || properties[fld.name].label),
+            hint: i18n.t( fld.hint || properties[fld.name].hint),
             range: fld.range || properties[fld.name].range,
             inputOutputMode: fld.inputOutputMode
           };
@@ -208,8 +217,12 @@ var oBJECTvIEW = function (slots) {
            this.modelObject[prop] !== undefined ||
            properties[prop].dependsOn  !== undefined)) {
         this.fieldOrder.push( prop);
-        this.fields[prop] = properties[prop];
-        this.fields[prop]["inputOutputMode"] = "I/O";
+        this.fields[prop] = util.cloneRecord( properties[prop]);
+        this.fields[prop].inputOutputMode = "I/O";
+        this.fields[prop].label = i18n.t( this.fields[prop].label);
+        if (this.fields[prop].hint) {
+          this.fields[prop].hint = i18n.t( this.fields[prop].hint);
+        }
       }
     }, this);
   }
@@ -623,7 +636,7 @@ oBJECTvIEW.createRecordTableWidget = function (slots) {
   }
   propDefs = Class.properties;
   tableEl.appendChild( tBody);
-  tableTitle = slots.tableTitle || Class.label || Class.Name;
+  tableTitle = i18n.t( slots.tableTitle || Class.label || Class.Name);
   if (!Class.isComplexDatatype) {
     if (slots.editableProperties) colProperties = slots.editableProperties;
     records = slots.records || Class.instances;
@@ -647,7 +660,7 @@ oBJECTvIEW.createRecordTableWidget = function (slots) {
   for (p in propDefs) {
     if (p !== "id" && p !== "name" && propDefs[p].label) {
       colProperties.push( p);
-      colHeadings.push( propDefs[p].label);
+      colHeadings.push( i18n.t( propDefs[p].label));
       colTypes.push( propDefs[p].range);
     }
   }

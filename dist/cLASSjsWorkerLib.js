@@ -159,7 +159,7 @@ RoleConstraintViolation.prototype.constructor = RoleConstraintViolation;
 /*******************************************************************************
  * @fileOverview A collection of utilities: methods, objects, etc used all over the code.
  * @author Mircea Diaconescu
- * @copyright Copyright © 2014 Gerd Wagner, Mircea Diaconescu et al, 
+ * @copyright Copyright © 2014 Gerd Wagner, Mircea Diaconescu et al,
  *            Chair of Internet Technology, Brandenburg University of Technology, Germany.
  * @date July 08, 2014, 11:04:23
  * @license The MIT License (MIT)
@@ -190,15 +190,15 @@ util.capitalizeFirstChar = function (str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 };
 /**
- * Copy all own (property and method) slots of a number of untyped objects 
+ * Copy all own (property and method) slots of a number of untyped objects
  * to a new untyped object.
  * @author Gerd Wagner
  * @return {object}  The merge result.
  */
 util.mergeObjects = function () {
-  var i = 0, k = 0, n = arguments.length, m = 0, 
+  var i = 0, k = 0, n = arguments.length, m = 0,
       foundArrayArg = false,
-      foundObjectArg = false, 
+      foundObjectArg = false,
       arg = null, mergedResult,
       keys=[], key="";
   for (i = 0; i < n; i++) {
@@ -222,9 +222,9 @@ util.mergeObjects = function () {
         keys = Object.keys( arg);
         m = keys.length;
         for (k = 0; k < m; k++) {
-          key = keys[k]; 
+          key = keys[k];
           mergedResult[key] = arg[key];
-        }      
+        }
       } else {
         throw "util.mergeObjects: incompatible objects were found! Trying to merge "+
               "an Object with an Array! Expected Object arguments only!";
@@ -386,7 +386,7 @@ util.mergeObjects = function () {
 };
  */
 /**
- * Swap two elements of an array 
+ * Swap two elements of an array
  * using the ES6 method Object.assign for creating a shallow clone of an object
  * @param a  the array
  * @param i  the first index
@@ -424,7 +424,33 @@ util.cartesianProduct = function (arr) {
     }).reduce( function (a,b) {return a.concat(b)}, [])
   }, [[]])
 };
+/**
+ * Load a script
+ * @param {Array} arr - An array of arrays of values to be combined
+ */
+util.loadScript = function (pathAndFilename, basePath, callback, errCallback) {
+  var loadEl = document.createElement('script');
+  // if a full URL is provided, the base path is ignored
+  if (pathAndFilename.indexOf("://") === -1)
+    pathAndFilename = basePath + pathAndFilename;
+  // if no callback(s) provided, define an empty function
+  callback = typeof callback === "function" ? callback : function () {};
+  errCallback = typeof errCallback === "function" ? errCallback : function () {};
+  loadEl.src = pathAndFilename;
+  loadEl.onload = function () {
+    callback(loadEl);
+  };
+  loadEl.onerror = function (e) {
+    console.log("Failed loading file '" + pathAndFilename + "'!");
+    loadEl.remove();
+    errCallback(e);
+  };
+  document.head.appendChild( loadEl);
+};
 
+/****************************************************************
+ * Math Library
+ ****************************************************************/
 var math = {};
 /**
  * Compute the sum of an array of numbers
@@ -450,7 +476,59 @@ math.stdDev = function (data) {
   return Math.sqrt( data.reduce( function (acc, x) {
     return acc + Math.pow( x - m, 2);}, 0) / (data.length - 1));
 };
+/**
+ * Compute the bootstrap confidence interval of an array of numbers. Based on
+ *   Efron, B. (1985). Bootstrap confidence intervals for a class of parametric
+ *   problems. Biometrika, 72(1), 45-58.
+ * @param {Array} data - An array of numbers
+ * @param {integer} samples - Number of bootstrap samples (default 10000)
+ * @param {decimal} alpha - Confidence interval to estimate [0,1] (default 0.95)
+ * @returns {Array} Lower and upper confidence interval
+ */
+math.bootstrapConfInt = function ( data, samples, alpha ) {
+  var n = samples || 10000;
+  var p = alpha || 0.95;
+  var i, j, t;
+  var mu = Array( n );
+  var m = math.mean( data );
+  var len = data.length;
 
+  /* Calculate bootstrap samples */
+  for ( i = 0; i < n; i += 1 ) {
+    t = 0;
+    for ( j = 0; j < len; j += 1 ) {
+      t += data[ Math.floor( Math.random() * len ) ];
+    }
+    mu[ i ] = ( t / len ) - m;
+  }
+
+  /* Sort in ascending order */
+  mu.sort( function ( a, b ) {
+    return a - b;
+  } );
+
+  /* Return the lower and upper bootstrap confidence interval */
+  return [
+    m - mu[ Math.floor( Math.min( n - 1, n * ( 1 - ( (1 - p ) / 2 ) ) ) ) ],
+    m - mu[ Math.floor( Math.max( 0, n * ( ( 1 - p ) / 2 ) ) ) ]
+  ];
+};
+/**
+ * Compute the lower confidence interval of an array of numbers.
+ * @param {Array} data - An array of numbers
+ * @returns {decimal} Lower confidence interval
+ */
+math.confIntLower = function ( data ) {
+  return math.bootstrapConfInt( data )[ 0 ];
+};
+/**
+ * Compute the upper confidence interval of an array of numbers.
+ * @param {Array} data - An array of numbers
+ * @returns {decimal} Upper confidence interval
+ */
+math.confIntUpper = function ( data ) {
+  return math.bootstrapConfInt( data )[ 1 ];
+};
 /**
  * Predefined class for creating enumerations as special JS objects.
  * @copyright Copyright 2014 Gerd Wagner, Chair of Internet Technology,
