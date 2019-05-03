@@ -179,7 +179,7 @@ sTORAGEmANAGER.prototype.retrieveAll = function (mc) {
  */
 sTORAGEmANAGER.prototype.update = function (mc, id, slots) {
   var adapterName = this.adapter.name,
-      dbName = this.adapter.dbName, 
+      dbName = this.adapter.dbName,
       currentSM = this;
   return new Promise( function (resolve) {
     var objectBeforeUpdate = null, properties = mc.properties,
@@ -330,12 +330,13 @@ sTORAGEmANAGER.adapters["LocalStorage"] = {
   //------------------------------------------------
   add: function (dbName, mc, records) {  // does not access localStorage
   //------------------------------------------------
+    var recordsCopy = JSON.parse( JSON.stringify( records));
     return new Promise( function (resolve) {
       var newObj=null;
-      if (!Array.isArray( records)) {  // single record insertion
-        records = [records];
+      if (!Array.isArray( recordsCopy)) {  // single record insertion
+        recordsCopy = [recordsCopy];
       }
-      records.forEach( function (rec) {
+      recordsCopy.forEach( function (rec) {
         newObj = new mc( rec);
         mc.instances[newObj.id] = newObj;
       })
