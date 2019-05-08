@@ -46,6 +46,8 @@ function cLASS (classSlots) {
   }
   // define a constructor function for creating a new object
   constr = function (instanceSlots) {
+    // take care of cLASS-specific provisions (e.g., set a fixed property value)
+    if ("onConstructionBeforeAssigningProperties" in methods) this.onConstructionBeforeAssigningProperties();
     if (!instanceSlots) return;
     if (supertypeName) {
       // invoke supertype constructor
@@ -84,38 +86,39 @@ function cLASS (classSlots) {
             this[p] = cLASS[range].instances[String(val)] || val;
           }
         } else this[p] = val;
-      } else if (pDef.initialValue !== undefined) {  // assign initial value
-        if (typeof pDef.initialValue === "function") {
-          propsWithInitialValFunc.push(p);
-        } else this[p] = pDef.initialValue;
-      } else if (p === "id" && range === "AutoNumber") {    // assign auto-ID
-        if (typeof this.constructor.getAutoId === "function") {
-          this[p] = this.constructor.getAutoId();
-        } else if (this.constructor.idCounter !== undefined) {
-          this[p] = ++this.constructor.idCounter;
-        }
-      } else if (!pDef.optional) {  // assign default values to mandatory properties
-        if (pDef.maxCard > 1) {
-          if (pDef.minCard === 0) {  // optional multi-valued property
+      } else if (this[p] === undefined) {
+        if (pDef.initialValue !== undefined) {  // assign initial value
+          if (typeof pDef.initialValue === "function") {
+            propsWithInitialValFunc.push(p);
+          } else this[p] = pDef.initialValue;
+        } else if (p === "id" && range === "AutoNumber") {    // assign auto-ID
+          if (typeof this.constructor.getAutoId === "function") {
+            this[p] = this.constructor.getAutoId();
+          } else if (this.constructor.idCounter !== undefined) {
+            this[p] = ++this.constructor.idCounter;
+          }
+        } else if (!pDef.optional) {  // assign default values to mandatory properties
+          if (pDef.maxCard > 1) {
+            if (pDef.minCard === 0) {  // optional multi-valued property
             if (pDef.range in cLASS && !pDef.isOrdered) this[p] = {};  // map
             else this[p] = [];  // array list
-          } else throw "A non-empty collection value for "+ p +" is required!";
-        } else if (cLASS.isIntegerType(range) || cLASS.isDecimalType(range)) {
-          this[p] = 0;
-        } else if (range === "String") {
-          this[p] = "";
-        } else if (range === "Boolean") {
-          this[p] = false;
-        } else if (typeof range === "object") {
-          if (["Array", "ArrayList"].includes(range.dataType)) {
-            this[p] = [];
-          } else if (range.dataType === "Map") {
-            this[p] = {};
+            } else throw "A non-empty collection value for "+ p +" is required!";
+          } else if (cLASS.isIntegerType(range) || cLASS.isDecimalType(range)) {
+            this[p] = 0;
+          } else if (range === "String") {
+            this[p] = "";
+          } else if (range === "Boolean") {
+            this[p] = false;
+          } else if (typeof range === "object") {
+            if (["Array", "ArrayList"].includes(range.dataType)) {
+              this[p] = [];
+            } else if (range.dataType === "Map") {
+              this[p] = {};
+            }
+          } else {
+            throw "A value for "+ p +" is required when creating a(n) "+ classSlots.Name;
           }
-        } else {
-          throw "A value for "+ p +" is required when creating a(n) "+ classSlots.Name;
-          console.log("instanceSlots = ", JSON.stringify(instanceSlots));
-        }
+        }		  
       }
       // initialize historical properties
       if (pDef.historySize) {
@@ -137,7 +140,7 @@ function cLASS (classSlots) {
       }, this);
     }
     // take care of cLASS-specific provisions (e.g., update a materialized view)
-    if ("onConstruction" in methods) this.onConstruction();
+    if ("onConstructionAfterAssigningProperties" in methods) this.onConstructionAfterAssigningProperties();
     // is the class neither a complex DT nor abstract and does the object have an ID slot?
     if (!classSlots.isComplexDatatype && !classSlots.isAbstract && "id" in this) {
       // add new object to the population/extension of the class
@@ -161,7 +164,7 @@ function cLASS (classSlots) {
     constr.prototype.constructor = constr;
     // merge superclass property declarations with own property declarations
     constr.properties = Object.create( superclass.properties);
-   //  assign own property declarations, possibly overriding super-props																		 
+   //  assign own property declarations, possibly overriding super-props                                     
     Object.keys( propDefs).forEach( function (p) {
       constr.properties[p] = propDefs[p];
     });
