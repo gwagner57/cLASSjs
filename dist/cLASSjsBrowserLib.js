@@ -477,7 +477,7 @@ math.stdDev = function (data) {
     return acc + Math.pow( x - m, 2);}, 0) / (data.length - 1));
 };
 /**
- * Compute the bootstrap confidence interval of an array of numbers. Based on
+ * Compute the confidence interval of an array of numbers. Based on
  *   Efron, B. (1985). Bootstrap confidence intervals for a class of parametric
  *   problems. Biometrika, 72(1), 45-58.
  * @param {Array} data - An array of numbers
@@ -485,7 +485,7 @@ math.stdDev = function (data) {
  * @param {decimal} alpha - Confidence interval to estimate [0,1] (default 0.95)
  * @returns {Array} Lower and upper confidence interval
  */
-math.bootstrapConfInt = function ( data, samples, alpha ) {
+math.confInt = function ( data, samples, alpha ) {
   var n = samples || 10000;
   var p = alpha || 0.95;
   var i, j, t;
@@ -507,27 +507,12 @@ math.bootstrapConfInt = function ( data, samples, alpha ) {
     return a - b;
   } );
 
-  /* Return the lower and upper bootstrap confidence interval */
-  return [
-    m - mu[ Math.floor( Math.min( n - 1, n * ( 1 - ( (1 - p ) / 2 ) ) ) ) ],
-    m - mu[ Math.floor( Math.max( 0, n * ( ( 1 - p ) / 2 ) ) ) ]
-  ];
-};
-/**
- * Compute the lower confidence interval of an array of numbers.
- * @param {Array} data - An array of numbers
- * @returns {decimal} Lower confidence interval
- */
-math.confIntLower = function ( data ) {
-  return math.bootstrapConfInt( data )[ 0 ];
-};
-/**
- * Compute the upper confidence interval of an array of numbers.
- * @param {Array} data - An array of numbers
- * @returns {decimal} Upper confidence interval
- */
-math.confIntUpper = function ( data ) {
-  return math.bootstrapConfInt( data )[ 1 ];
+  /* Return the lower and upper confidence interval */
+  return {
+    lowerBound: m - mu[ Math.floor( Math.min( n - 1,
+      n * ( 1 - ( ( 1 - p ) / 2 ) ) ) ) ],
+    upperBound: m - mu[ Math.floor( Math.max( 0, n * ( ( 1 - p ) / 2 ) ) ) ]
+  };
 };
 /**
  * Predefined class for creating enumerations as special JS objects.
@@ -671,6 +656,8 @@ function cLASS (classSlots) {
   }
   // define a constructor function for creating a new object
   constr = function (instanceSlots) {
+    // take care of cLASS-specific provisions (e.g., set a fixed property value)
+    if ("onConstructionBeforeAssigningProperties" in methods) this.onConstructionBeforeAssigningProperties();
     if (!instanceSlots) return;
     if (supertypeName) {
       // invoke supertype constructor
@@ -709,38 +696,39 @@ function cLASS (classSlots) {
             this[p] = cLASS[range].instances[String(val)] || val;
           }
         } else this[p] = val;
-      } else if (pDef.initialValue !== undefined) {  // assign initial value
-        if (typeof pDef.initialValue === "function") {
-          propsWithInitialValFunc.push(p);
-        } else this[p] = pDef.initialValue;
-      } else if (p === "id" && range === "AutoNumber") {    // assign auto-ID
-        if (typeof this.constructor.getAutoId === "function") {
-          this[p] = this.constructor.getAutoId();
-        } else if (this.constructor.idCounter !== undefined) {
-          this[p] = ++this.constructor.idCounter;
-        }
-      } else if (!pDef.optional) {  // assign default values to mandatory properties
-        if (pDef.maxCard > 1) {
-          if (pDef.minCard === 0) {  // optional multi-valued property
+      } else if (this[p] === undefined) {
+        if (pDef.initialValue !== undefined) {  // assign initial value
+          if (typeof pDef.initialValue === "function") {
+            propsWithInitialValFunc.push(p);
+          } else this[p] = pDef.initialValue;
+        } else if (p === "id" && range === "AutoNumber") {    // assign auto-ID
+          if (typeof this.constructor.getAutoId === "function") {
+            this[p] = this.constructor.getAutoId();
+          } else if (this.constructor.idCounter !== undefined) {
+            this[p] = ++this.constructor.idCounter;
+          }
+        } else if (!pDef.optional) {  // assign default values to mandatory properties
+          if (pDef.maxCard > 1) {
+            if (pDef.minCard === 0) {  // optional multi-valued property
             if (pDef.range in cLASS && !pDef.isOrdered) this[p] = {};  // map
             else this[p] = [];  // array list
-          } else throw "A non-empty collection value for "+ p +" is required!";
-        } else if (cLASS.isIntegerType(range) || cLASS.isDecimalType(range)) {
-          this[p] = 0;
-        } else if (range === "String") {
-          this[p] = "";
-        } else if (range === "Boolean") {
-          this[p] = false;
-        } else if (typeof range === "object") {
-          if (["Array", "ArrayList"].includes(range.dataType)) {
-            this[p] = [];
-          } else if (range.dataType === "Map") {
-            this[p] = {};
+            } else throw "A non-empty collection value for "+ p +" is required!";
+          } else if (cLASS.isIntegerType(range) || cLASS.isDecimalType(range)) {
+            this[p] = 0;
+          } else if (range === "String") {
+            this[p] = "";
+          } else if (range === "Boolean") {
+            this[p] = false;
+          } else if (typeof range === "object") {
+            if (["Array", "ArrayList"].includes(range.dataType)) {
+              this[p] = [];
+            } else if (range.dataType === "Map") {
+              this[p] = {};
+            }
+          } else {
+            throw "A value for "+ p +" is required when creating a(n) "+ classSlots.Name;
           }
-        } else {
-          throw "A value for "+ p +" is required when creating a(n) "+ classSlots.Name;
-          console.log("instanceSlots = ", JSON.stringify(instanceSlots));
-        }
+        }		  
       }
       // initialize historical properties
       if (pDef.historySize) {
@@ -762,7 +750,7 @@ function cLASS (classSlots) {
       }, this);
     }
     // take care of cLASS-specific provisions (e.g., update a materialized view)
-    if ("onConstruction" in methods) this.onConstruction();
+    if ("onConstructionAfterAssigningProperties" in methods) this.onConstructionAfterAssigningProperties();
     // is the class neither a complex DT nor abstract and does the object have an ID slot?
     if (!classSlots.isComplexDatatype && !classSlots.isAbstract && "id" in this) {
       // add new object to the population/extension of the class
@@ -786,7 +774,7 @@ function cLASS (classSlots) {
     constr.prototype.constructor = constr;
     // merge superclass property declarations with own property declarations
     constr.properties = Object.create( superclass.properties);
-   //  assign own property declarations, possibly overriding super-props																		 
+   //  assign own property declarations, possibly overriding super-props                                     
     Object.keys( propDefs).forEach( function (p) {
       constr.properties[p] = propDefs[p];
     });
@@ -1753,30 +1741,61 @@ var dom = {
   * and insert them into a selection list element
   *
   * @param {object} selEl  A select(ion list) element
-  * @param {object} options  An array list of records or text items
+  * @param {object} strings  An array list of strings
   * @param {object} optPar  A record of optional parameters
   */
-  fillSelectWithOptionsFromArrayList: function (selEl, options, optPar) {
+  fillSelectWithOptionsFromStringList: function (selEl, strings, optPar) {
     selEl.innerHTML = "";
     if (!selEl.multiple) {
       selEl.add( dom.createOption({text:" --- ", value:""}), null);
     }
-    options.forEach( function (opt,i) {
-      var optEl = null,
-          id = optPar && optPar.primaryKey ? opt[optPar.primaryKey] : opt.id;
-      if (typeof opt === "string") optEl = dom.createOption({text: opt, value: i});
-      else optEl = dom.createOption({
-        text: optPar && optPar.displayProp ? opt[optPar.displayProp] : id,
-        value: id
-      });
-      if (selEl.multiple && optPar && optPar.selection &&
-          optPar.selection.includes(i+1)) {
-        // flag the option element with this value as selected
-        optEl.selected = true;
+    strings.forEach( function (str) {
+      var optEl = dom.createOption({text: str, value: str});
+      if (selEl.multiple) {
+        if (optPar && optPar.selection && optPar.selection.includes( str)) {
+          // flag the option element with this value as selected
+          optEl.selected = true;
+        }
       }
       selEl.add( optEl, null);
     });
   },
+   /**
+    * Create option elements from an array list of option text strings
+    * and insert them into a selection list element
+    *
+    * @param {object} selEl  A select(ion list) element
+    * @param {object} options  An array list of entity records or text items
+    * @param {object} optPar  A record of optional parameters
+    */
+   fillSelectWithOptionsFromArrayList: function (selEl, options, optPar) {
+     selEl.innerHTML = "";
+     if (!selEl.multiple) {
+       selEl.add( dom.createOption({text:" --- ", value:""}), null);
+     }
+     options.forEach( function (opt,i) {
+       var optEl=null, id;
+       if (typeof opt === "string") optEl = dom.createOption({text: opt, value: i});
+       else {  // entity record
+         id = optPar && optPar.primaryKey ? opt[optPar.primaryKey] : opt.id;
+         optEl = dom.createOption({
+           text: optPar && optPar.displayProp ? opt[optPar.displayProp] : id,
+           value: id
+         });
+       }
+       if (selEl.multiple) {
+         if (optPar && optPar.selection && optPar.selection.includes(i+1)) {
+           // flag the option element with this value as selected
+           optEl.selected = true;
+         }
+       } else {
+         if (optPar && optPar.selected && optPar.selected === opt) {
+           selEl.value = i;
+         }
+       }
+       selEl.add( optEl, null);
+     });
+   },
    /**
     * Create option elements from a map of ID values to entity objects/records
     * and insert them into a selection list element
@@ -3392,7 +3411,7 @@ sTORAGEmANAGER.prototype.retrieveAll = function (mc) {
  */
 sTORAGEmANAGER.prototype.update = function (mc, id, slots) {
   var adapterName = this.adapter.name,
-      dbName = this.adapter.dbName, 
+      dbName = this.adapter.dbName,
       currentSM = this;
   return new Promise( function (resolve) {
     var objectBeforeUpdate = null, properties = mc.properties,
@@ -3543,12 +3562,13 @@ sTORAGEmANAGER.adapters["LocalStorage"] = {
   //------------------------------------------------
   add: function (dbName, mc, records) {  // does not access localStorage
   //------------------------------------------------
+    var recordsCopy = JSON.parse( JSON.stringify( records));
     return new Promise( function (resolve) {
       var newObj=null;
-      if (!Array.isArray( records)) {  // single record insertion
-        records = [records];
+      if (!Array.isArray( recordsCopy)) {  // single record insertion
+        recordsCopy = [recordsCopy];
       }
-      records.forEach( function (rec) {
+      recordsCopy.forEach( function (rec) {
         newObj = new mc( rec);
         mc.instances[newObj.id] = newObj;
       })
@@ -3720,13 +3740,14 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
   //------------------------------------------------
   add: function (dbName, mc, records) {
   //------------------------------------------------
+    var recordsCopy = JSON.parse( JSON.stringify( records));
     return new Promise( function (resolve) {
       var tableName = mc.tableName || util.class2TableName( mc.Name);
       idb.open( dbName).then( function (idbCx) {  // idbCx is a DB connection
         var tx = idbCx.transaction( tableName, "readwrite");
         var os = tx.objectStore( tableName);
         // Promise.all takes a list of promises and resolves if all of them do
-        return Promise.all( records.map( function (rec) {return os.add( rec);}))
+        return Promise.all( recordsCopy.map( function (rec) {return os.add( rec);}))
             .then( function () {return tx.complete;});
       }).then( resolve)
       .catch( function (err) {

@@ -193,6 +193,7 @@ form output {
   background-color: gainsboro;
 }
 form div.field-group > label > input,
+form div.field-group > label > select,
 form div.field-group > label > output {
   margin-left: 0.7em;
   margin-right: 0.1em;
