@@ -15,6 +15,7 @@ const argv = require( "yargs").argv,
   notify = require("gulp-notify"),
   gulpif = require("gulp-if"),
   uglify = require("gulp-uglify"),
+  //cleanCSS = require("gulp-clean-css"),
   tap = require("gulp-tap"),
   del = require("del"),
   jshint = require('gulp-jshint');
@@ -59,6 +60,15 @@ gulp.task( "build-browser-lib", function() {
     .pipe( gulp.dest( buildFolder))
     .pipe( notify({message: "cLASSjsBrowserLib.js was built!"}));
 });
+gulp.task( "build-css", function() {
+  return gulp.src(
+    [ "css/normalize.css",
+      "css/vIEW.css"
+	])
+    .pipe( concat( "cLASS.css"))
+//    .pipe( gulpif( argv.production, cleanCSS()))
+    .pipe( gulp.dest( buildFolder))
+});
 // build the cLASSjsWorkerLib.js file
 gulp.task( "build-worker-lib", function() {
   return gulp.src( cLASSjsWorkerLibFiles)
@@ -69,6 +79,7 @@ gulp.task( "build-worker-lib", function() {
 });
 gulp.task( "build", [ 
     "build-browser-lib",
+	"build-css",
     "build-worker-lib"
 ]);
 
