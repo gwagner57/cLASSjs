@@ -50,8 +50,46 @@ We loop over the enumeration `WeatherStateEL` with a `for` loop counting from 1 
       }
     }
 
+## Use Case 2: Declarative Constraint Valdiation
 
-## Use Case 2: Flexible Data Storage Management with Storage Adapters
+cLASSjs allows defining property constraints in a model class created with cLASS:
+
+    var Book = new cLASS({
+      Name: "Book",
+      properties: {
+        "id": {range:"NonEmptyString", label:"ISBN", pattern:/\b\d{9}(\d|X)\b/,
+            patternMessage:"The ISBN must be a 10-digit string or a 9-digit string followed by 'X'!"},
+        "title": {range:"NonEmptyString", min: 2, max: 50}, 
+        "year": {range:"Integer", min: 1459, max: util.nextYear()},
+        "edition": {range:"PositiveInteger", optional: true}
+      }
+    });
+
+Suitable *range constraints* can be defined by using one of the supported range keywords listed below.
+
+<ul>
+<li>"String", "NonEmptyString", "Identifier", "Email", "URL", "PhoneNumber"</li>
+<li>"Integer", "PositiveInteger", "NonNegativeInteger", "AutoNumber"</li>
+<li>"Decimal", "Number", "Percent", "ClosedUnitInterval", "OpenUnitInterval"</li>
+<li>"Boolean"</li>
+<li>"DateTime", "Date"</li>
+</ul>
+	
+The constraints defined for a property in a model class can be checked on input/change and before submit in an HTML form and, in addition, before commit in the `add` and `update` methods of a storage manager, using the generic validation method `cLASS.check`, as shown in the following example:
+
+<pre>
+var formEl = document.querySelector("#Book-Create > form");
+// loop over Book.properties and add event listeners for validation on input
+Object.keys( Book.properties).forEach( function (prop) {
+  var propDecl = Book.properties[prop];
+  formEl[prop].addEventListener("input", function () {
+	var errMsg = <b>cLASS.check</b>( prop, propDecl, formEl[prop].value).message;
+	formEl[prop].setCustomValidity( errMsg);
+  });
+});
+</pre>
+
+## Use Case 3: Flexible Data Storage Management with Storage Adapters
 
 cLASSjs comes with a sTORAGEmANAGER class and two storage adapters for using `localStorage` or `ìndexedDB`. 
 
@@ -73,31 +111,3 @@ Since the IndexedDB technology is much more powerful, it is normally preferred f
     }
     storageManager = new sTORAGEmANAGER( storageAdapter);
 
-## Use Case 3: Declarative Constraint Valdiation
-
-cLASSjs allows defining property constraints in a model class created with cLASS:
-
-    var Book = new cLASS({
-      Name: "Book",
-      properties: {
-        "id": {range:"NonEmptyString", label:"ISBN", pattern:/\b\d{9}(\d|X)\b/,
-            patternMessage:"The ISBN must be a 10-digit string or a 9-digit string followed by 'X'!"},
-        "title": {range:"NonEmptyString", min: 2, max: 50}, 
-        "year": {range:"Integer", min: 1459, max: util.nextYear()},
-        "edition": {range:"PositiveInteger", optional: true}
-      }
-    });
-
-The constraints defined for a property in a model class can be checked on input/change and before submit in an HTML form and, in addition, before commit in the `add` and `update` methods of a storage manager, using the generic validation method `cLASS.check`, as shown in the following example:
-
-<pre>
-var formEl = document.querySelector("#Book-Create > form");
-// loop over Book.properties and add event listeners for validation on input
-Object.keys( Book.properties).forEach( function (prop) {
-  var propDecl = Book.properties[prop];
-  formEl[prop].addEventListener("input", function () {
-	var errMsg = <b>cLASS.check</b>( prop, propDecl, formEl[prop].value).message;
-	formEl[prop].setCustomValidity( errMsg);
-  });
-});
-</pre>
