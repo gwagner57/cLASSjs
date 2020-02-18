@@ -5,7 +5,7 @@
 vt.LearningUnit = new cLASS({
   Name: "LearningUnit",
   properties: {
-    "id": {range:"AutoNumber", label:"ID number"},
+    "id": {range:"AutoIdNumber", label:"ID number"},
     "title": {range:"NonEmptyString", min: 2, max: 200, label:"Title"},
     "description": {range:"NonEmptyString", min: 10, max: 1000,
       label:"Description"},

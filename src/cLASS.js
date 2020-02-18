@@ -91,7 +91,7 @@ function cLASS (classSlots) {
           if (typeof pDef.initialValue === "function") {
             propsWithInitialValFunc.push(p);
           } else this[p] = pDef.initialValue;
-        } else if (p === "id" && range === "AutoNumber") {    // assign auto-ID
+        } else if (p === "id" && range === "AutoIdNumber") {    // assign auto-ID
           if (typeof this.constructor.getAutoId === "function") {
             this[p] = this.constructor.getAutoId();
           } else if (this.constructor.idCounter !== undefined) {
@@ -118,7 +118,7 @@ function cLASS (classSlots) {
           } else {
             throw "A value for "+ p +" is required when creating a(n) "+ classSlots.Name;
           }
-        }		  
+        }          
       }
       // initialize historical properties
       if (pDef.historySize) {
@@ -272,7 +272,8 @@ function cLASS (classSlots) {
       // make sure the eNUMERATION meta-class object can be checked if available
       var eNUMERATION = typeof eNUMERATION === "undefined" ? undefined : eNUMERATION;
       var propDecl = this.constructor.properties[prop],
-          range = propDecl.range, val = this[prop];
+          range = propDecl.range, val = this[prop],
+          decimalPlaces = propDecl.displayDecimalPlaces || oes.defaults.displayDecimalPlaces || 2;
       var valuesToConvert=[], displayStr="", k=0,
           listSep = ", ";
       if (val === undefined || val === null) return "";
@@ -289,8 +290,11 @@ function cLASS (classSlots) {
           valuesToConvert[i] = propDecl.val2str( v);
         } else if (eNUMERATION && range instanceof eNUMERATION) {
           valuesToConvert[i] = range.labels[v-1];
-        } else if (["number","string","boolean"].includes( typeof v) || !v) {
+        } else if (["string","boolean"].includes( typeof v) || !v) {
           valuesToConvert[i] = String( v);
+        } else if (typeof v === "number") {
+          if (Number.isInteger(v)) valuesToConvert[i] = String( v);
+          else valuesToConvert[i] = math.round( v, decimalPlaces);
         } else if (range === "Date") {
           valuesToConvert[i] = util.createIsoDateString( v);
         } else if (Array.isArray( v)) {  // JSON-compatible array
@@ -359,7 +363,7 @@ function cLASS (classSlots) {
   * @return {boolean}
   */
 cLASS.isIntegerType = function (T) {
-  return ["Integer","PositiveInteger","AutoNumber","NonNegativeInteger"].includes(T) ||
+  return ["Integer","PositiveInteger","AutoIdNumber","NonNegativeInteger"].includes(T) ||
       T instanceof eNUMERATION;
 };
  /**
@@ -519,7 +523,7 @@ cLASS.isIntegerType = function (T) {
          }
        });
        break;
-     case "AutoNumber":
+     case "AutoIdNumber":
        if (valuesToCheck.length === 1) {
          if (!Number.isInteger( valuesToCheck[0]) || valuesToCheck[0] < 1) {
            constrVio = new RangeConstraintViolation("The value of "+ fld +
@@ -819,7 +823,7 @@ cLASS.isIntegerType = function (T) {
      case "NonNegativeInteger":
      case "PositiveInteger":
      case "Number":
-     case "AutoNumber":
+     case "AutoIdNumber":
      case "Decimal":
      case "Percent":
      case "ClosedUnitInterval":

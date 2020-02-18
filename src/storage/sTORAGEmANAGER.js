@@ -81,7 +81,7 @@ sTORAGEmANAGER.prototype.add = function (mClass, rec) {
     records = rec;
   } else throw Error("2nd argument of 'add' must be a record or record list!");
   // create auto-IDs if required
-  if (mClass.properties.id && mClass.properties.id.range === "AutoNumber") {
+  if (mClass.properties.id && mClass.properties.id.range === "AutoIdNumber") {
     records.forEach( function (r) {
       if (!r.id) {  // do not overwrite assigned ID values
         if (typeof mClass.getAutoId === "function") r.id = mClass.getAutoId();

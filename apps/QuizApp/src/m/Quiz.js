@@ -6,7 +6,7 @@ qz.Quiz = new cLASS({
   Name: "Quiz",
   tableName: "quizzes",  // irregular plural form
   properties: {
-    "id": {range:"AutoNumber", label:"Quiz ID"},
+    "id": {range:"AutoIdNumber", label:"Quiz ID"},
     "title": {range:"NonEmptyString"},
     "titleTextItemNo": {range:"PositiveInteger", optional: true},
     "questions": {range:"Question", maxCard: Infinity, ordered: true}

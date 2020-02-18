@@ -11,7 +11,7 @@ qz.QuestionTypeEL = new eNUMERATION("QuestionTypeEL",["multiple-choice", "short-
 qz.Question = new cLASS({
   Name: "Question",
   properties: {
-    "id": {range:"AutoNumber", label:"Question ID"},
+    "id": {range:"AutoIdNumber", label:"Question ID"},
     "type": {range: "QuestionTypeEL"},
     "questionText": {range:"NonEmptyString"},
     "questionTextItemNo": {range:"PositiveInteger", optional: true},
