@@ -411,9 +411,9 @@ cLASS.isIntegerType = function (T) {
  cLASS.check = function (fld, decl, val, optParams) {
    var constrVio=null, valuesToCheck=[],
        msg = decl.patternMessage || "",
-       minCard = decl.minCard!=="umdefined" ? decl.minCard : decl.optional?0:1,  // by default, a property is mandatory
+       minCard = decl.minCard !== "undefined" ? decl.minCard : decl.optional?0:1,  // by default, a property is mandatory
        maxCard = decl.maxCard || 1,  // by default, a property is single-valued
-       min = decl.min || 0, max = decl.max,
+       min = decl.min, max = decl.max,
        range = decl.range,
        pattern = decl.pattern;
    // check Mandatory Value Constraint
@@ -770,8 +770,8 @@ cLASS.isIntegerType = function (T) {
        }
      });
    }
-   if (range === "Integer" || range === "NonNegativeInteger" ||
-       range === "PositiveInteger") {
+   // check Interval Constraints
+   if (cLASS.range2JsDataType( range) === "number") {
      valuesToCheck.forEach( function (v) {
        if (min !== undefined && v < min) {
          constrVio = new IntervalConstraintViolation( fld +
