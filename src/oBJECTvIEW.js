@@ -409,26 +409,28 @@ oBJECTvIEW.prototype.render = function (objViewParentEl) {
     for (j=0; j < choiceItems.length; j++) {
       // button values = 1..n
       el = dom.createLabeledChoiceControl( btnType, fld, j+1, choiceItems[j]);
+      if (btnType === "radio" && mObject[fld] === j+1) {
+        el.firstElementChild.checked = true;  // el is a label element
+      }
       containerEl.appendChild( el);
       el.firstElementChild.addEventListener("click", function (e) {
         // UI element to model property data binding (top-down)
         var btnEl = e.target, i=0,
-            mo = mObjects[fields[fld].moName],
             val = parseInt( btnEl.value);
         if (btnType === "radio") {
-          if (val !== mo[fld]) {
-            mo[fld] = val;
+          if (val !== mObject[fld]) {
+            mObject[fld] = val;
           } else if (fields[fld].optional) {
             // turn off radio button
             btnEl.checked = false;
-            mo[fld] = undefined;
+            mObject[fld] = undefined;
           }
         } else {  // checkbox
-          i = mo[fld].indexOf( val);
+          i = mObject[fld].indexOf( val);
           if (i > -1) {  // delete from value list
-            mo[fld].splice(i, 1);
+            mObject[fld].splice(i, 1);
           } else {  // add to value list
-            mo[fld].push( val);
+            mObject[fld].push( val);
           }
         }
       });
@@ -460,17 +462,16 @@ oBJECTvIEW.prototype.render = function (objViewParentEl) {
     }
     dom.fillSelectWithOptionsFromArrayList( selEl, choiceItems);
     selEl.addEventListener("change", function () {
-      var mo = mObjects[fields[fld].moName];
       // UI element to model property data binding (top-down)
       if (selEl.value !== "") {
         if (oBJECTvIEW.isIntegerType( range)) {
-          mo[fld] = parseInt( selEl.value);
+          mObject[fld] = parseInt( selEl.value);
           // increment by 1 for enumerations
-          if (range instanceof eNUMERATION) mo[fld]++;
+          if (range instanceof eNUMERATION) mObject[fld]++;
         } else if (fields[fld].range === "Date") {
-          mo[fld] = new Date( selEl.value);
+          mObject[fld] = new Date( selEl.value);
         } else {
-          mo[fld] = selEl.value;
+          mObject[fld] = selEl.value;
         }
       }
     });
@@ -832,7 +833,7 @@ oBJECTvIEW.createUiFromViewModel = function (viewModel) {
     } else if (typeof fldDef.value === "object") {
       fldEl.value = JSON.stringify( fldDef.value);
     } else {
-      fldEl.value = fldDef.value || fldDef.initialValue || "";
+      fldEl.value = fieldValues[fld] || fldDef.value || fldDef.initialValue || "";
     }
     fldEl.size = fldDef.inputFieldSize || 7;
     if (fldDef.hint) lblEl.title = fldDef.hint;
@@ -871,7 +872,8 @@ oBJECTvIEW.createUiFromViewModel = function (viewModel) {
    */
   function createChoiceButtonGroup( fld) {
     var j=0, btnType="", containerEl=null, el=null, choiceItems=[],
-        range = fields[fld].range;
+        range = fields[fld].range,
+        val = fieldValues[fld] || fields[fld].initialValue;
     el = document.createElement("legend");
     el.textContent = fields[fld].label;
     containerEl = document.createElement("fieldset");
@@ -897,6 +899,9 @@ oBJECTvIEW.createUiFromViewModel = function (viewModel) {
     for (j=0; j < choiceItems.length; j++) {
       // button values = 1..n
       el = dom.createLabeledChoiceControl( btnType, fld, j+1, choiceItems[j]);
+      if (btnType === "radio" && val === j+1) {
+        el.firstElementChild.checked = true;  // el is a label element
+      }
       containerEl.appendChild( el);
       el.firstElementChild.addEventListener("click", function (e) {
         // data binding of UI element to model property (top-down)
