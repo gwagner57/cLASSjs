@@ -974,7 +974,10 @@ function cLASS (classSlots) {
   // return the constructor as the object constructed with new cLASS
   return constr;
 }
- /**
+ cLASS.integerTypes = ["Integer","PositiveInteger","NonNegativeInteger","AutoIdNumber"];
+ cLASS.decimalTypes = ["Number","Decimal","Percent","ClosedUnitInterval","OpenUnitInterval"];
+ cLASS.numericTypes = cLASS.integerTypes.concat( cLASS.decimalTypes);
+     /**
   * Determine if a type is an integer type.
   * @method
   * @author Gerd Wagner
@@ -982,10 +985,9 @@ function cLASS (classSlots) {
   * @return {boolean}
   */
 cLASS.isIntegerType = function (T) {
-  return ["Integer","PositiveInteger","AutoIdNumber","NonNegativeInteger"].includes(T) ||
-      T instanceof eNUMERATION;
+  return cLASS.integerTypes.includes(T) || T instanceof eNUMERATION;
 };
- /**
+/**
   * Determine if a type is a decimal type.
   * @method
   * @author Gerd Wagner
@@ -993,7 +995,7 @@ cLASS.isIntegerType = function (T) {
   * @return {boolean}
   */
  cLASS.isDecimalType = function (T) {
-   return ["Number","Decimal","Percent","ClosedUnitInterval","OpenUnitInterval"].includes(T);
+   return cLASS.decimalTypes.includes(T);
  };
  /**
   * Constants
