@@ -44,6 +44,11 @@ function cLASS (classSlots) {
     throw "No range defined for property "+ missingRangeProp +
         " of class "+ classSlots.Name +" !";
   }
+  Object.keys( propDefs).forEach( function (p) {
+    if (typeof propDefs[p].initialValue === "function") {
+      propsWithInitialValFunc.push( p);
+    }
+  });
   // define a constructor function for creating a new object
   constr = function (instanceSlots) {
     // take care of cLASS-specific provisions (e.g., set a fixed property value)
@@ -60,8 +65,10 @@ function cLASS (classSlots) {
       if (typeof instanceSlots === "object" && p in instanceSlots) {
         // property p has an initialization slot
         val = instanceSlots[p];
-        validationResult = cLASS.check( p, pDef, val);
-        if (!(validationResult instanceof NoConstraintViolation)) throw validationResult;
+        if (cLASS.areConstraintsToBeChecked) {
+          validationResult = cLASS.check( p, pDef, val);
+          if (!(validationResult instanceof NoConstraintViolation)) throw validationResult;
+        }
         // is range a cLASS collection datatype?
         if (typeof range === "object" && range.dataType !== undefined) {
           this[p] = Array.isArray( val) ? val.slice(0) : Object.assign({}, val);  // assign clone
@@ -88,9 +95,7 @@ function cLASS (classSlots) {
         } else this[p] = val;
       } else if (this[p] === undefined) {
         if (pDef.initialValue !== undefined) {  // assign initial value
-          if (typeof pDef.initialValue === "function") {
-            propsWithInitialValFunc.push(p);
-          } else this[p] = pDef.initialValue;
+          if (typeof pDef.initialValue !== "function") this[p] = pDef.initialValue;
         } else if (p === "id" && range === "AutoIdNumber") {    // assign auto-ID
           if (typeof this.constructor.getAutoId === "function") {
             this[p] = this.constructor.getAutoId();
@@ -131,7 +136,9 @@ function cLASS (classSlots) {
     }, this);
     // call the functions for initial value expressions
     propsWithInitialValFunc.forEach( function (p) {
-      this[p] = propDefs[p].initialValue.call(this);
+      var f = propDefs[p].initialValue;
+      if (f.length === 0) this[p] = f();
+      else this[p] = f.call( this);
     }, this);
     // assign remaining fields not defined as properties by the object's class
     if (typeof( instanceSlots) === "object") {
@@ -174,12 +181,12 @@ function cLASS (classSlots) {
     constr.prototype.set = function ( prop, val) {
     /***************************************************/
       // this = object
-      var validationResult = cLASS.check( prop, this.constructor.properties[prop], val);
-      if (validationResult instanceof NoConstraintViolation) {
-        this[prop] = validationResult.checkedValue;
-      } else {
-        throw validationResult;
-      }
+      var validationResult = null;
+      if (cLASS.areConstraintsToBeChecked) {
+        validationResult = cLASS.check( prop, this.constructor.properties[prop], val);
+        if (!(validationResult instanceof NoConstraintViolation)) throw validationResult;
+        else this[prop] = validationResult.checkedValue;
+      } else this[prop] = val;
     };
     /***************************************************/
     // overwrite and improve the standard toString method
@@ -355,10 +362,13 @@ function cLASS (classSlots) {
   // return the constructor as the object constructed with new cLASS
   return constr;
 }
- cLASS.integerTypes = ["Integer","PositiveInteger","NonNegativeInteger","AutoIdNumber"];
- cLASS.decimalTypes = ["Number","Decimal","Percent","ClosedUnitInterval","OpenUnitInterval"];
- cLASS.numericTypes = cLASS.integerTypes.concat( cLASS.decimalTypes);
-     /**
+// A flag for disabling constraint checking
+cLASS.areConstraintsToBeChecked = true;
+// define lists of datatype names
+cLASS.integerTypes = ["Integer","PositiveInteger","NonNegativeInteger","AutoIdNumber"];
+cLASS.decimalTypes = ["Number","Decimal","Percent","ClosedUnitInterval","OpenUnitInterval"];
+cLASS.numericTypes = cLASS.integerTypes.concat( cLASS.decimalTypes);
+/**
   * Determine if a type is an integer type.
   * @method
   * @author Gerd Wagner

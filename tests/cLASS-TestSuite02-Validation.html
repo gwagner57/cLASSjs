@@ -29,7 +29,7 @@ var Person = new cLASS({
     personId: {range:"NonNegativeInteger", isStandardId: true, label:"Person identifier"},
     name: {range:"NonEmptyString", min: 2, max: 20, label:"Name"},
     gender: {range: GenderEL, label:"Gender"},
-    dateOfbirth: {range:"Date", label:"Date of birth"},
+    birthDate: {range:"Date", label:"Date of birth"},
     age: {range:"NonNegativeInteger", max: 130, optional: true, label:"Age"}
   },
   methods: {
@@ -64,18 +64,35 @@ try {
   failure = false;
 } catch (e) {
   document.write( "FAILED! <br />");
-  console.log(e.constructor.name +": "+ e.message);
+  console.log( e);
+  console.log( e.constructor.name +": "+ e.message);
   failure = true;
 }
 if (!failure) {
-//test validation checks with setter
+  document.write("Test the <strong>setter</strong> with correct date value: ");
+  try {
+    gw.set("gender", GenderEL.FEMALE);
+    document.write( "OKAY <br />");
+  } catch (e) {
+    document.write( "FAILED! <br />");
+    console.log( e, e.constructor.name +": "+ e.message);
+  }
   document.write("Test the <strong>setter</strong> with flawed date value: ");
   try {
-    gw.set("dateOfbirth", "15.50.1957");
+    gw.set("birthDate", "1957-15-15");
     document.write( "FAILED! <br />");
   } catch (e) {
     console.log( e.constructor.name +": "+ e.message);
     document.write( "OKAY <br />");
+  }
+  document.write("Test the <strong>cLASS.areConstraintsToBeChecked</strong> flag: ");
+  cLASS.areConstraintsToBeChecked = false;
+  try {
+    gw.set("birthDate", "1957-15-15");
+    document.write( "OKAY! <br />");
+  } catch (e) {
+    console.log( e.constructor.name +": "+ e.message);
+    document.write( "FAILED <br />");
   }
 }
 
