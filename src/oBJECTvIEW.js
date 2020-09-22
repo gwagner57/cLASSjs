@@ -44,7 +44,7 @@
  * clickable) HTML elements.
  *
  * A view's UI with its view-field-based input/output elements and widgets
- * is rendered by invoking the ender method on the view. UI fields/widgets are
+ * is rendered by invoking the render method on the view. UI fields/widgets are
  * subsequently synchronized with view field values and model object property values
  * by means of a top-down data binding mechanism: value changes of UI fields are
  * propagated to corresponding view fields (typically in a change event listener)
