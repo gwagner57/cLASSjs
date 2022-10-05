@@ -690,7 +690,7 @@ cLASS.isIntegerType = function (T) {
              if (!rangeTypes.some( function (rc) {
                return v instanceof cLASS[rc];
              })) {
-               constrVio = ReferentialIntegrityConstraintViolation("The object " + JSON.stringify(v) +
+               constrVio = new ReferentialIntegrityConstraintViolation("The object " + JSON.stringify(v) +
                    " is not an instance of any class from " + range + "!");
              } else {
                v = valuesToCheck[i] = v.id;  // convert to IdRef
