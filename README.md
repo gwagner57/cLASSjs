@@ -1,4 +1,6 @@
-# cLASSjs
+# This project has been suspended in favor of https://github.com/gwagner57/OEMjs
+
+## cLASSjs
 A JS library for defining 
 
 1. enumerations;
